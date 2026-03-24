@@ -350,3 +350,83 @@ function DeployConnectorDialog() {
     </Dialog>
   );
 }
+
+function RevokeNodeDialog({ nodeName, onRevoke }: { nodeName: string; onRevoke: () => void }) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="text-warning hover:text-warning">
+          <ShieldOff className="w-3 h-3 mr-2" /> Revoke Keys
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Revoke Node Keys</DialogTitle>
+          <DialogDescription>
+            Revoking keys for <strong>{nodeName}</strong> will invalidate the current Organisation Key
+            on this node. The node will need to be reconfigured with a new key before it can
+            reconnect.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm text-muted-foreground">
+          <p className="font-medium text-foreground mb-1">Before revoking</p>
+          <p className="text-xs">
+            Consider configuring a second Organisation Key on the node first via{" "}
+            <a href="https://admin.dataminer.services" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              admin.dataminer.services
+            </a>{" "}
+            to avoid downtime during key rotation.
+          </p>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+          <DialogClose asChild>
+            <Button variant="outline" className="text-warning hover:text-warning border-warning/30 hover:bg-warning/5" onClick={onRevoke}>
+              <ShieldOff className="w-3 h-3 mr-1" /> Revoke Keys
+            </Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function BanNodeDialog({ nodeName, onBan }: { nodeName: string; onBan: () => void }) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/5">
+          <ShieldBan className="w-3 h-3 mr-2" /> Ban Node
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Ban Edge Node</DialogTitle>
+          <DialogDescription>
+            Banning <strong>{nodeName}</strong> will immediately disconnect the node, revoke all keys,
+            and prevent it from re-registering. This action is intended for compromised nodes.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 text-xs text-muted-foreground">
+          <p className="font-medium text-destructive mb-1">⚠ This action cannot be easily undone</p>
+          <p>
+            All running connectors on this node will be stopped. The node will need to be
+            reinstalled and re-approved to reconnect to the DataMiner System.
+          </p>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+          <DialogClose asChild>
+            <Button variant="destructive" onClick={onBan}>
+              <ShieldBan className="w-3 h-3 mr-1" /> Ban Node
+            </Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
