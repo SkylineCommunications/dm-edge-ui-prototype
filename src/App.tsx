@@ -8,6 +8,7 @@ import Overview from "./pages/Overview";
 import LocationDetail from "./pages/LocationDetail";
 import ConnectorsOverview from "./pages/ConnectorsOverview";
 import PendingApprovals from "./pages/PendingApprovals";
+import InstallEdge from "./pages/InstallEdge";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
