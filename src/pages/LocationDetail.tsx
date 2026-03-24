@@ -351,40 +351,46 @@ function DeployConnectorDialog() {
   );
 }
 
-function RevokeNodeDialog({ nodeName, onRevoke }: { nodeName: string; onRevoke: () => void }) {
+function KeyRotationDialog({ nodeName, onSave }: { nodeName: string; onSave: () => void }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="text-warning hover:text-warning">
-          <ShieldOff className="w-3 h-3 mr-2" /> Revoke Keys
+        <Button variant="outline" size="sm">
+          <Key className="w-3 h-3 mr-2" /> Configure Keys
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Revoke Node Keys</DialogTitle>
+          <DialogTitle>Organisation Key Configuration</DialogTitle>
           <DialogDescription>
-            Revoking keys for <strong>{nodeName}</strong> will invalidate the current Organisation Key
-            on this node. The node will need to be reconfigured with a new key before it can
-            reconnect.
+            Configure a second Organisation Key on <strong>{nodeName}</strong> for seamless key rotation.
+            Once the node starts using the new key, the old key can be released
+            via <a href="https://admin.dataminer.services" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">admin.dataminer.services</a>.
           </DialogDescription>
         </DialogHeader>
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground mb-1">Before revoking</p>
-          <p className="text-xs">
-            Consider configuring a second Organisation Key on the node first via{" "}
-            <a href="https://admin.dataminer.services" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-              admin.dataminer.services
-            </a>{" "}
-            to avoid downtime during key rotation.
-          </p>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Current Key</Label>
+            <Input className="h-8 text-xs font-mono" value="••••••••••••••••a1b2" disabled />
+            <p className="text-[11px] text-muted-foreground">Active since Jan 15, 2026</p>
+          </div>
+          <Separator />
+          <div className="space-y-1.5">
+            <Label className="text-xs">Second Key (optional)</Label>
+            <Input className="h-8 text-xs font-mono" placeholder="Paste new Organisation Key" />
+            <p className="text-[11px] text-muted-foreground">
+              The node will begin using this key once configured. You can then revoke the original key
+              from <a href="https://admin.dataminer.services" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">admin.dataminer.services</a>.
+            </p>
+          </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
           <DialogClose asChild>
-            <Button variant="outline" className="text-warning hover:text-warning border-warning/30 hover:bg-warning/5" onClick={onRevoke}>
-              <ShieldOff className="w-3 h-3 mr-1" /> Revoke Keys
+            <Button onClick={onSave}>
+              <Key className="w-3 h-3 mr-1" /> Save Key
             </Button>
           </DialogClose>
         </DialogFooter>
@@ -392,7 +398,6 @@ function RevokeNodeDialog({ nodeName, onRevoke }: { nodeName: string; onRevoke: 
     </Dialog>
   );
 }
-
 function BanNodeDialog({ nodeName, onBan }: { nodeName: string; onBan: () => void }) {
   return (
     <Dialog>
