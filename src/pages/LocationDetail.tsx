@@ -109,9 +109,9 @@ export default function LocationDetail() {
               <Button variant="outline" size="sm" onClick={() => setShowNodeLog(true)}>
                 <FileText className="w-3 h-3 mr-2" /> Collect Node Logs
               </Button>
-              <RevokeNodeDialog
+              <KeyRotationDialog
                 nodeName={node.name}
-                onRevoke={() => toast({ title: "Node revoked", description: `${node.name} keys have been revoked.` })}
+                onSave={() => toast({ title: "Key configured", description: `Second Organisation Key has been configured on ${node.name}.` })}
               />
               <BanNodeDialog
                 nodeName={node.name}
