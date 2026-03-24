@@ -17,6 +17,7 @@ import {
 const navItems = [
   { title: "Overview", url: "/", icon: LayoutDashboard },
   { title: "Connectors", url: "/connectors", icon: Blocks },
+  { title: "Install Edge", url: "/install", icon: Download },
   { title: "Pending Approvals", url: "/approvals", icon: AlertTriangle, badge: pendingNodes.length },
   { title: "Settings", url: "/settings", icon: Settings },
 ];

@@ -24,6 +24,7 @@ const App = () => (
             <Route path="/" element={<Overview />} />
             <Route path="/locations/:locationId" element={<LocationDetail />} />
             <Route path="/connectors" element={<ConnectorsOverview />} />
+            <Route path="/install" element={<InstallEdge />} />
             <Route path="/approvals" element={<PendingApprovals />} />
             <Route path="/settings" element={<div className="text-muted-foreground">Settings — Coming soon</div>} />
             <Route path="*" element={<NotFound />} />
