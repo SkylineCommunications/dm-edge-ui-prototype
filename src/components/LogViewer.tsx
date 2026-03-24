@@ -35,8 +35,8 @@ export function LogViewer({ title, onClose }: LogViewerProps) {
   };
 
   return (
-    <div className="bg-card border rounded-lg animate-slide-up">
-      <div className="flex items-center justify-between p-3 border-b">
+    <div className="bg-card border rounded-lg animate-slide-up shadow-sm">
+      <div className="flex items-center justify-between p-3 border-b bg-muted/30 rounded-t-lg">
         <h3 className="text-sm font-semibold">Logs — {title}</h3>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleCollect} disabled={loading}>
@@ -52,10 +52,10 @@ export function LogViewer({ title, onClose }: LogViewerProps) {
           </Button>
         </div>
       </div>
-      <div className="p-3 max-h-80 overflow-auto bg-background/50 rounded-b-lg">
-        <pre className="text-[11px] font-mono leading-5 space-y-0">
+      <div className="p-3 max-h-80 overflow-auto">
+        <pre className="text-[11px] font-mono leading-5">
           {lines.map((line, i) => (
-            <div key={i} className={`${getLineClass(line)} hover:bg-accent/30 px-1`}>
+            <div key={i} className={`${getLineClass(line)} hover:bg-muted/50 px-1 rounded`}>
               {line}
             </div>
           ))}

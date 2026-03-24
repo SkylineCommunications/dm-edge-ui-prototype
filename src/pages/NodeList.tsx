@@ -9,7 +9,7 @@ export default function NodeList() {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-6 animate-slide-up">
+    <div className="space-y-6 animate-slide-up max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Edge Nodes</h1>
         <p className="text-sm text-muted-foreground mt-1">All approved nodes in your DataMiner System</p>
@@ -19,7 +19,7 @@ export default function NodeList() {
         {mockNodes.map(node => (
           <Card
             key={node.id}
-            className="cursor-pointer hover:border-primary/30 transition-colors"
+            className="cursor-pointer hover:shadow-md hover:border-primary/20 transition-all shadow-sm"
             onClick={() => navigate(`/nodes/${node.id}`)}
           >
             <CardContent className="py-4">

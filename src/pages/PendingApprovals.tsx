@@ -20,23 +20,23 @@ export default function PendingApprovals() {
       return;
     }
     setNodes(prev => prev.filter(n => n.id !== id));
-    toast({ title: "Node approved", description: `${id} approved with location "${locations[id]}"` });
+    toast({ title: "Node approved", description: `Node approved with location "${locations[id]}"` });
   };
 
   const handleReject = (id: string) => {
     setNodes(prev => prev.filter(n => n.id !== id));
-    toast({ title: "Node rejected", description: `${id} has been rejected.` });
+    toast({ title: "Node rejected", description: `Node has been rejected.` });
   };
 
   return (
-    <div className="space-y-6 animate-slide-up">
+    <div className="space-y-6 animate-slide-up max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Pending Approvals</h1>
         <p className="text-sm text-muted-foreground mt-1">Review and approve newly registered Edge Nodes</p>
       </div>
 
       {nodes.length === 0 && (
-        <Card>
+        <Card className="shadow-sm">
           <CardContent className="py-12 text-center text-muted-foreground">
             No pending nodes. All caught up!
           </CardContent>
@@ -45,7 +45,7 @@ export default function PendingApprovals() {
 
       <div className="space-y-3">
         {nodes.map(node => (
-          <Card key={node.id}>
+          <Card key={node.id} className="shadow-sm">
             <CardContent className="py-4">
               <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <div className="flex-1">

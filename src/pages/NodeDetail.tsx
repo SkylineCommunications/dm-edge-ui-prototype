@@ -16,7 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose
 } from "@/components/ui/dialog";
 import {
-  ArrowLeft, FileText, Trash2, Plus, Play, Square, Settings, Clock, Download
+  ArrowLeft, FileText, Trash2, Plus, Settings, Clock, ChevronDown, ChevronRight
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -48,16 +48,18 @@ export default function NodeDetail() {
   };
 
   return (
-    <div className="space-y-6 animate-slide-up">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-          <ArrowLeft className="w-4 h-4 mr-1" /> Back
-        </Button>
+    <div className="space-y-6 animate-slide-up max-w-6xl">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm">
+        <button onClick={() => navigate('/')} className="text-primary hover:underline">Overview</button>
+        <span className="text-muted-foreground">/</span>
+        <button onClick={() => navigate('/nodes')} className="text-primary hover:underline">Edge Nodes</button>
+        <span className="text-muted-foreground">/</span>
+        <span className="text-foreground font-medium">{node.name}</span>
       </div>
 
       <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-        {/* Node Info */}
+        {/* Node info */}
         <div className="flex-1 space-y-4">
           <div>
             <div className="flex items-center gap-3">
@@ -78,11 +80,15 @@ export default function NodeDetail() {
             <InfoCard label="Accepted" value={node.packetStats.accepted.toLocaleString()} />
           </div>
 
-          <BufferStatus stats={node.packetStats} />
+          <Card className="shadow-sm">
+            <CardContent className="pt-4 pb-4">
+              <BufferStatus stats={node.packetStats} />
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Node actions */}
-        <div className="flex flex-col gap-2 lg:w-48">
+        {/* Actions */}
+        <div className="flex flex-col gap-2 lg:w-52">
           <Button variant="outline" size="sm" onClick={() => setShowNodeLog(true)}>
             <FileText className="w-3 h-3 mr-2" /> Collect Node Logs
           </Button>
@@ -92,17 +98,12 @@ export default function NodeDetail() {
 
       {showNodeLog && <LogViewer title={node.name} onClose={() => setShowNodeLog(false)} />}
 
-      <Separator />
-
-      {/* Bandwidth */}
       <BandwidthChart title={`Bandwidth — ${node.name} (24h)`} />
-
-      <Separator />
 
       {/* Connectors */}
       <div>
         <h2 className="text-lg font-semibold mb-4">Scripted Connectors</h2>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {node.connectors.map(connector => (
             <ConnectorSection
               key={connector.id}
@@ -123,7 +124,7 @@ export default function NodeDetail() {
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <Card>
+    <Card className="shadow-sm">
       <CardContent className="py-3 px-4">
         <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{label}</p>
         <p className="text-sm font-mono font-semibold mt-0.5">{value}</p>
@@ -143,19 +144,29 @@ function ConnectorSection({
   showLog: boolean;
   onToggleLog: () => void;
 }) {
-  const statusColor = connector.status === 'running' ? 'text-success' : connector.status === 'error' ? 'text-destructive' : 'text-muted-foreground';
+  const statusColors: Record<string, string> = {
+    running: 'text-success',
+    error: 'text-destructive',
+    stopped: 'text-muted-foreground',
+  };
+  const dotColors: Record<string, string> = {
+    running: 'bg-success',
+    error: 'bg-destructive',
+    stopped: 'bg-muted-foreground',
+  };
 
   return (
-    <Card className={expanded ? 'border-primary/20' : ''}>
-      <CardHeader className="py-3 cursor-pointer" onClick={onToggle}>
+    <Card className={`shadow-sm transition-all ${expanded ? 'border-primary/30 shadow-md' : ''}`}>
+      <CardHeader className="py-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg" onClick={onToggle}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-2 h-2 rounded-full ${connector.status === 'running' ? 'bg-success' : connector.status === 'error' ? 'bg-destructive' : 'bg-muted-foreground'}`} />
+            {expanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+            <div className={`w-2 h-2 rounded-full ${dotColors[connector.status]}`} />
             <CardTitle className="text-sm">{connector.name}</CardTitle>
-            <Badge variant="outline" className="text-[10px] font-mono">v{connector.version}</Badge>
-            <span className={`text-xs font-medium capitalize ${statusColor}`}>{connector.status}</span>
+            <Badge variant="secondary" className="text-[10px] font-mono">v{connector.version}</Badge>
+            <span className={`text-xs font-medium capitalize ${statusColors[connector.status]}`}>{connector.status}</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="font-mono">{connector.bandwidthKbps > 0 ? `${(connector.bandwidthKbps / 1000).toFixed(1)} Mbps` : '—'}</span>
             <span>{connector.schedules.length} schedule(s)</span>
           </div>
@@ -165,12 +176,11 @@ function ConnectorSection({
       {expanded && (
         <CardContent className="pt-0 space-y-4">
           {connector.lastError && (
-            <div className="text-xs text-destructive bg-destructive/10 px-3 py-2 rounded-md font-mono">
+            <div className="text-xs text-destructive bg-destructive/5 border border-destructive/20 px-3 py-2 rounded-md font-mono">
               ⚠ {connector.lastError}
             </div>
           )}
 
-          {/* Packet stats */}
           <BufferStatus stats={connector.packetStats} />
 
           {/* Arguments */}
@@ -180,7 +190,7 @@ function ConnectorSection({
               {Object.entries(connector.arguments).map(([key, val]) => (
                 <div key={key} className="flex gap-2 items-center">
                   <Label className="text-xs w-24 text-muted-foreground shrink-0">{key}</Label>
-                  <Input className="h-7 text-xs font-mono" defaultValue={val} />
+                  <Input className="h-8 text-xs font-mono" defaultValue={val} />
                 </div>
               ))}
             </div>
@@ -192,7 +202,7 @@ function ConnectorSection({
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Schedules</h4>
-              <Button variant="ghost" size="sm" className="h-6 text-xs">
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-primary">
                 <Plus className="w-3 h-3 mr-1" /> Add Schedule
               </Button>
             </div>
@@ -210,11 +220,11 @@ function ConnectorSection({
             <Button variant="outline" size="sm" onClick={onToggleLog}>
               <FileText className="w-3 h-3 mr-1" /> {showLog ? 'Hide Logs' : 'Collect Logs'}
             </Button>
-            <Button variant="outline" size="sm">
+            <Button size="sm">
               <Settings className="w-3 h-3 mr-1" /> Save Changes
             </Button>
-            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={onRemove}>
-              <Trash2 className="w-3 h-3 mr-1" /> Remove Connector
+            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/5" onClick={onRemove}>
+              <Trash2 className="w-3 h-3 mr-1" /> Remove
             </Button>
           </div>
 
@@ -227,17 +237,17 @@ function ConnectorSection({
 
 function ScheduleRow({ schedule, onRemove }: { schedule: Schedule; onRemove: () => void }) {
   return (
-    <div className="bg-muted/30 rounded-md p-3 space-y-2">
+    <div className="bg-muted/40 rounded-lg p-3 space-y-2 border border-border/50">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Switch defaultChecked={schedule.enabled} />
           <span className="text-sm font-medium">{schedule.name}</span>
-          <Badge variant="outline" className="text-[10px] font-mono">
+          <Badge variant="secondary" className="text-[10px] font-mono">
             <Clock className="w-2.5 h-2.5 mr-1" />
             {schedule.cron}
           </Badge>
         </div>
-        <Button variant="ghost" size="sm" className="h-6 text-destructive hover:text-destructive" onClick={onRemove}>
+        <Button variant="ghost" size="sm" className="h-7 text-destructive hover:text-destructive hover:bg-destructive/5" onClick={onRemove}>
           <Trash2 className="w-3 h-3" />
         </Button>
       </div>
@@ -247,12 +257,11 @@ function ScheduleRow({ schedule, onRemove }: { schedule: Schedule; onRemove: () 
           {schedule.nextRun && <span>Next: {formatDistanceToNow(new Date(schedule.nextRun))}</span>}
         </div>
       )}
-      {/* Schedule-specific arguments */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
         {Object.entries(schedule.arguments).map(([key, val]) => (
           <div key={key} className="flex gap-2 items-center">
             <Label className="text-xs w-24 text-muted-foreground shrink-0">{key}</Label>
-            <Input className="h-6 text-[11px] font-mono" defaultValue={val} />
+            <Input className="h-7 text-[11px] font-mono" defaultValue={val} />
           </div>
         ))}
       </div>
@@ -282,13 +291,13 @@ function DeployConnectorDialog() {
             <Input placeholder="e.g. 2.1.0" />
           </div>
           <Separator />
-          <p className="text-xs text-muted-foreground">Arguments (add key-value pairs)</p>
+          <p className="text-xs text-muted-foreground">Arguments (key-value pairs)</p>
           <div className="space-y-2">
             <div className="flex gap-2">
               <Input className="h-8 text-xs" placeholder="Key (e.g. targetIp)" />
               <Input className="h-8 text-xs" placeholder="Value (e.g. 10.0.0.1)" />
             </div>
-            <Button variant="ghost" size="sm" className="text-xs">
+            <Button variant="ghost" size="sm" className="text-xs text-primary">
               <Plus className="w-3 h-3 mr-1" /> Add Argument
             </Button>
           </div>
