@@ -105,9 +105,19 @@ export default function LocationDetail() {
         {/* Actions */}
         <div className="flex flex-col gap-2 lg:w-56">
           {node && (
-            <Button variant="outline" size="sm" onClick={() => setShowNodeLog(true)}>
-              <FileText className="w-3 h-3 mr-2" /> Collect Node Logs
-            </Button>
+            <>
+              <Button variant="outline" size="sm" onClick={() => setShowNodeLog(true)}>
+                <FileText className="w-3 h-3 mr-2" /> Collect Node Logs
+              </Button>
+              <RevokeNodeDialog
+                nodeName={node.name}
+                onRevoke={() => toast({ title: "Node revoked", description: `${node.name} keys have been revoked.` })}
+              />
+              <BanNodeDialog
+                nodeName={node.name}
+                onBan={() => toast({ title: "Node banned", description: `${node.name} has been banned and will be disconnected.`, variant: "destructive" })}
+              />
+            </>
           )}
           <DeployConnectorDialog />
           <Button variant="outline" size="sm" asChild>
