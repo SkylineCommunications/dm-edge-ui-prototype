@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { mockNodes, ScriptedConnector, Schedule } from "@/data/mockData";
+import { getLocation, ScriptedConnector, Schedule } from "@/data/mockData";
 import { StatusIndicator } from "@/components/StatusIndicator";
 import { BufferStatus } from "@/components/BufferStatus";
 import { BandwidthChart } from "@/components/BandwidthChart";
@@ -16,28 +16,32 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose
 } from "@/components/ui/dialog";
 import {
-  ArrowLeft, FileText, Trash2, Plus, Settings, Clock, ChevronDown, ChevronRight
+  FileText, Trash2, Plus, Settings, Clock, ChevronDown, ChevronRight, MapPin, Server, ExternalLink, Blocks
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
-export default function NodeDetail() {
-  const { nodeId } = useParams();
+const CATALOG_URL = "https://catalog.dataminer.services/browse/scripted-connectors";
+
+export default function LocationDetail() {
+  const { locationId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const node = mockNodes.find(n => n.id === nodeId);
+  const location = getLocation(locationId || '');
   const [showNodeLog, setShowNodeLog] = useState(false);
   const [connectorLogId, setConnectorLogId] = useState<string | null>(null);
   const [expandedConnector, setExpandedConnector] = useState<string | null>(null);
 
-  if (!node) {
+  if (!location) {
     return (
       <div className="text-center py-20 text-muted-foreground">
-        <p>Node not found.</p>
+        <p>Location not found.</p>
         <Button variant="outline" className="mt-4" onClick={() => navigate('/')}>Go back</Button>
       </div>
     );
   }
+
+  const node = location.nodes[0]; // one node per location for now
 
   const handleRemoveConnector = (connectorId: string) => {
     toast({ title: "Connector removed", description: `${connectorId} has been removed (prototype).` });
@@ -53,58 +57,80 @@ export default function NodeDetail() {
       <div className="flex items-center gap-2 text-sm">
         <button onClick={() => navigate('/')} className="text-primary hover:underline">Overview</button>
         <span className="text-muted-foreground">/</span>
-        <button onClick={() => navigate('/nodes')} className="text-primary hover:underline">Edge Nodes</button>
-        <span className="text-muted-foreground">/</span>
-        <span className="text-foreground font-medium">{node.name}</span>
+        <span className="text-foreground font-medium">{location.name}</span>
       </div>
 
       <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-        {/* Node info */}
+        {/* Location + Node info */}
         <div className="flex-1 space-y-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">{node.name}</h1>
-              <StatusIndicator status={node.status} />
+              <MapPin className="w-5 h-5 text-primary" />
+              <h1 className="text-2xl font-bold">{location.name}</h1>
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground mt-2">
-              <span>📍 {node.location}</span>
-              <span className="font-mono">{node.ipAddress}</span>
-              <span>v{node.version}</span>
-            </div>
+            {location.description && (
+              <p className="text-sm text-muted-foreground mt-1 ml-8">{location.description}</p>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <InfoCard label="Last Packet" value={formatDistanceToNow(new Date(node.lastPacketReceived)) + ' ago'} />
-            <InfoCard label="Bandwidth" value={node.bandwidthKbps > 0 ? `${(node.bandwidthKbps / 1000).toFixed(1)} Mbps` : 'N/A'} />
-            <InfoCard label="Connectors" value={String(node.connectors.length)} />
-            <InfoCard label="Accepted" value={node.packetStats.accepted.toLocaleString()} />
-          </div>
-
-          <Card className="shadow-sm">
-            <CardContent className="pt-4 pb-4">
-              <BufferStatus stats={node.packetStats} />
-            </CardContent>
-          </Card>
+          {/* Node health section */}
+          {node && (
+            <Card className="shadow-sm">
+              <CardHeader className="py-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Server className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-sm">{node.name}</CardTitle>
+                    <StatusIndicator status={node.status} />
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="font-mono">{node.ipAddress}</span>
+                    <span>v{node.version}</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0 pb-4 space-y-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <InfoCard label="Last Packet" value={formatDistanceToNow(new Date(node.lastPacketReceived)) + ' ago'} />
+                  <InfoCard label="Bandwidth" value={node.bandwidthKbps > 0 ? `${(node.bandwidthKbps / 1000).toFixed(1)} Mbps` : 'N/A'} />
+                  <InfoCard label="Accepted" value={node.packetStats.accepted.toLocaleString()} />
+                  <InfoCard label="Dropped" value={node.packetStats.dropped.toLocaleString()} />
+                </div>
+                <BufferStatus stats={node.packetStats} />
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Actions */}
-        <div className="flex flex-col gap-2 lg:w-52">
-          <Button variant="outline" size="sm" onClick={() => setShowNodeLog(true)}>
-            <FileText className="w-3 h-3 mr-2" /> Collect Node Logs
-          </Button>
+        <div className="flex flex-col gap-2 lg:w-56">
+          {node && (
+            <Button variant="outline" size="sm" onClick={() => setShowNodeLog(true)}>
+              <FileText className="w-3 h-3 mr-2" /> Collect Node Logs
+            </Button>
+          )}
           <DeployConnectorDialog />
+          <Button variant="outline" size="sm" asChild>
+            <a href={CATALOG_URL} target="_blank" rel="noopener noreferrer">
+              <Blocks className="w-3 h-3 mr-2" /> Browse Catalog
+              <ExternalLink className="w-3 h-3 ml-1.5" />
+            </a>
+          </Button>
         </div>
       </div>
 
-      {showNodeLog && <LogViewer title={node.name} onClose={() => setShowNodeLog(false)} />}
+      {showNodeLog && node && <LogViewer title={node.name} onClose={() => setShowNodeLog(false)} />}
 
-      <BandwidthChart title={`Bandwidth — ${node.name} (24h)`} />
+      <BandwidthChart title={`Bandwidth — ${location.name} (24h)`} />
 
       {/* Connectors */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Scripted Connectors</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Scripted Connectors</h2>
+          <span className="text-xs text-muted-foreground">{location.connectors.length} deployed</span>
+        </div>
         <div className="space-y-3">
-          {node.connectors.map(connector => (
+          {location.connectors.map(connector => (
             <ConnectorSection
               key={connector.id}
               connector={connector}
@@ -124,12 +150,10 @@ export default function NodeDetail() {
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="shadow-sm">
-      <CardContent className="py-3 px-4">
-        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{label}</p>
-        <p className="text-sm font-mono font-semibold mt-0.5">{value}</p>
-      </CardContent>
-    </Card>
+    <div className="bg-muted/50 rounded-md px-3 py-2">
+      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{label}</p>
+      <p className="text-sm font-mono font-semibold mt-0.5">{value}</p>
+    </div>
   );
 }
 
@@ -183,7 +207,6 @@ function ConnectorSection({
 
           <BufferStatus stats={connector.packetStats} />
 
-          {/* Arguments */}
           <div>
             <h4 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Arguments</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -198,7 +221,6 @@ function ConnectorSection({
 
           <Separator />
 
-          {/* Schedules */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Schedules</h4>
@@ -215,7 +237,6 @@ function ConnectorSection({
 
           <Separator />
 
-          {/* Actions */}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={onToggleLog}>
               <FileText className="w-3 h-3 mr-1" /> {showLog ? 'Hide Logs' : 'Collect Logs'}
@@ -300,6 +321,11 @@ function DeployConnectorDialog() {
             <Button variant="ghost" size="sm" className="text-xs text-primary">
               <Plus className="w-3 h-3 mr-1" /> Add Argument
             </Button>
+          </div>
+          <div className="text-xs text-muted-foreground pt-2">
+            <a href={CATALOG_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+              Browse the Catalog for available connectors <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
         </div>
         <DialogFooter>
