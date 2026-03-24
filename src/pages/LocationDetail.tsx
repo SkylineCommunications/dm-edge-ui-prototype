@@ -16,7 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription
 } from "@/components/ui/dialog";
 import {
-  FileText, Trash2, Plus, Settings, Clock, ChevronDown, ChevronRight, MapPin, Server, ExternalLink, Blocks, ShieldBan, ShieldOff
+  FileText, Trash2, Plus, Settings, Clock, ChevronDown, ChevronRight, MapPin, Server, ExternalLink, Blocks, ShieldBan, Key
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
