@@ -1,4 +1,4 @@
-import { Blocks, AlertTriangle, LayoutDashboard, Settings, MapPin } from "lucide-react";
+import { Blocks, AlertTriangle, LayoutDashboard, Settings, MapPin, Download } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { pendingNodes } from "@/data/mockData";
@@ -17,6 +17,7 @@ import {
 const navItems = [
   { title: "Overview", url: "/", icon: LayoutDashboard },
   { title: "Connectors", url: "/connectors", icon: Blocks },
+  { title: "Install Edge", url: "/install", icon: Download },
   { title: "Pending Approvals", url: "/approvals", icon: AlertTriangle, badge: pendingNodes.length },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
