@@ -141,6 +141,32 @@ const amsterdamConnectors: ScriptedConnector[] = [
       { id: 'sch-004', name: 'Every 10s', cron: '*/10 * * * * *', enabled: true, arguments: { readType: 'holding' }, lastRun: '2026-03-24T14:32:00Z', nextRun: '2026-03-24T14:32:10Z' },
     ],
   },
+  {
+    id: 'sc-005',
+    name: 'SNMP Poller',
+    version: '2.1.0',
+    status: 'running',
+    locationId: 'loc-002',
+    arguments: { targetIp: '10.42.2.80', community: 'public', port: '161' },
+    bandwidthKbps: 980,
+    packetStats: { accepted: 45200, dropped: 5, bufferSize: 0, bufferCapacity: 5000, isRecovering: false },
+    schedules: [
+      { id: 'sch-006', name: 'Every 5 min', cron: '*/5 * * * *', enabled: true, arguments: { oids: '1.3.6.1.2.1.1' }, lastRun: '2026-03-24T14:30:00Z', nextRun: '2026-03-24T14:35:00Z' },
+    ],
+  },
+  {
+    id: 'sc-006',
+    name: 'HTTP Health Check',
+    version: '1.0.3',
+    status: 'running',
+    locationId: 'loc-002',
+    arguments: { url: 'https://warehouse.internal.local/health', timeout: '3000' },
+    bandwidthKbps: 85,
+    packetStats: { accepted: 12300, dropped: 0, bufferSize: 0, bufferCapacity: 2000, isRecovering: false },
+    schedules: [
+      { id: 'sch-007', name: 'Every 2 min', cron: '*/2 * * * *', enabled: true, arguments: { expectedStatus: '200' }, lastRun: '2026-03-24T14:32:00Z', nextRun: '2026-03-24T14:34:00Z' },
+    ],
+  },
 ];
 
 const munichConnectors: ScriptedConnector[] = [
