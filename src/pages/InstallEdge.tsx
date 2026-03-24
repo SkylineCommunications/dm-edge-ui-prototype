@@ -212,7 +212,8 @@ export default function InstallEdge() {
             </p>
             <p>
               To rotate keys without downtime, configure a second Organisation Key on the Edge Node
-              via{" "}
+              from the location detail page in this UI. Once the node starts using the new key,
+              the old key can be released via{" "}
               <a
                 href="https://admin.dataminer.services"
                 target="_blank"
@@ -220,8 +221,7 @@ export default function InstallEdge() {
                 className="text-primary hover:underline"
               >
                 admin.dataminer.services
-              </a>
-              . Once the node starts using the new key, the old key can be safely revoked.
+              </a>.
             </p>
           </div>
         </CardContent>
