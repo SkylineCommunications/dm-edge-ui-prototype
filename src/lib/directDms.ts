@@ -13,7 +13,7 @@ export type DirectDmsSettings = {
 };
 
 const STORAGE_KEY = "edge-mind-dash.direct-dms-settings";
-const DEFAULT_DMS_ENDPOINT = "https://dms.dataminer.local";
+const DEFAULT_DMS_ENDPOINT = "wss://dms.dataminer.local";
 
 export function buildDirectDmsKey() {
   const bytes = crypto.getRandomValues(new Uint8Array(16));

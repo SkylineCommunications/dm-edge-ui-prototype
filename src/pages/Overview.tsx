@@ -17,7 +17,7 @@ export default function Overview() {
   return (
     <div className="space-y-6 animate-slide-up max-w-6xl">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Edge Overview</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Location Overview</h1>
         <p className="text-sm text-muted-foreground mt-1">Locations, nodes and connectors at a glance</p>
       </div>
 

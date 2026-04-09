@@ -38,10 +38,10 @@ function buildConfigSnippets(
       path: configPaths.deb,
       content: `# /etc/dataminer/edge.conf
 [General]
-OrganisationKey=<YOUR_ORGANISATION_KEY>
+OrganisationKey=<YOUR_DMS_KEY>
 
 [Connection]
-DmsEndpoint=https://your-dms.dataminer.services
+DmsEndpoint=wss://dataminer.services
 BufferSize=10000
 
 # After installation, restart the service:
@@ -54,7 +54,7 @@ BufferSize=10000
 OrganisationKey=<YOUR_ORGANISATION_KEY>
 
 [Connection]
-DmsEndpoint=https://your-dms.dataminer.services
+DmsEndpoint=wss://dataminer.services
 BufferSize=10000
 
 ; After installation, restart via Services or:
@@ -65,7 +65,7 @@ BufferSize=10000
       content: `# docker run
 docker run -d \\
   -e DM_ORGANISATION_KEY=<YOUR_ORGANISATION_KEY> \\
-  -e DM_DMS_ENDPOINT=https://your-dms.dataminer.services \\
+  -e DM_DMS_ENDPOINT=wss://dataminer.services \\
   -e DM_BUFFER_SIZE=10000 \\
   --name dataminer-edge \\
   dataminer/edge:latest
@@ -76,7 +76,7 @@ docker run -d \\
 #     image: dataminer/edge:latest
 #     environment:
 #       DM_ORGANISATION_KEY: <YOUR_ORGANISATION_KEY>
-#       DM_DMS_ENDPOINT: https://your-dms.dataminer.services`,
+#       DM_DMS_ENDPOINT: wss://dataminer.services`,
     },
   },
     direct: {
@@ -142,21 +142,21 @@ const connectionModeDetails: Record<
   organisation: {
     title: "Default route via dataminer.services",
     summary:
-      "Use an Organisation Key when the Edge Node connects to the DataMiner System through dataminer.services. This is the default onboarding flow.",
+      "Use an DMS Key when the Edge Node connects to the DataMiner System through dataminer.services. This is the default onboarding flow.",
     requirement: "The Edge Node only needs outbound access to dataminer.services.",
     sourceTitle: "Where to find the key",
     sourceSteps: [
       "Log in to admin.dataminer.services",
-      "Navigate to Organisation > Keys",
-      "Copy an existing Organisation Key or generate a new one",
+      "Under DataMiner Systems, expand the target DataMiner System and navigate to Keys.",
+      "Copy an existing Primary Key or generate a new one.",
     ],
     note:
-      "To rotate keys without downtime, configure a second Organisation Key on the Edge Node from the location detail page in this UI. Once the node starts using the new key, the old key can be released via admin.dataminer.services.",
+      "To rotate keys without downtime, configure a second DMS Key on the Edge Node from the location detail page in this UI. Once the node starts using the new key, the old key can be released via admin.dataminer.services.",
   },
   direct: {
     title: "Direct route to the DMS",
     summary:
-      "Use a DMS-generated key when the Edge Node can connect to the DataMiner System directly, without going through dataminer.services.",
+      "Use this alternative only when needed: the Edge Node connects directly to the DataMiner System with a local key instead of using the recommended dataminer.services route.",
     requirement: "This option requires IP connectivity between the Edge Node and the DMS.",
     sourceTitle: "How to prepare direct onboarding",
     sourceSteps: [

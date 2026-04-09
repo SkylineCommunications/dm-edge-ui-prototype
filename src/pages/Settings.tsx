@@ -143,7 +143,7 @@ export default function Settings() {
                   endpoint: nextEndpoint,
                 }));
               }}
-              placeholder="https://dms.dataminer.local"
+              placeholder="wss://dms.dataminer.local"
               className="font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
