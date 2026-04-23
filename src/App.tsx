@@ -9,6 +9,7 @@ import LocationDetail from "./pages/LocationDetail";
 import ConnectorsOverview from "./pages/ConnectorsOverview";
 import PendingApprovals from "./pages/PendingApprovals";
 import InstallEdge from "./pages/InstallEdge";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,7 +27,7 @@ const App = () => (
             <Route path="/connectors" element={<ConnectorsOverview />} />
             <Route path="/install" element={<InstallEdge />} />
             <Route path="/approvals" element={<PendingApprovals />} />
-            <Route path="/settings" element={<div className="text-muted-foreground">Settings — Coming soon</div>} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>

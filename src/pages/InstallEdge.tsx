@@ -1,11 +1,14 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDirectDmsSettings } from "@/lib/directDms";
 import { ExternalLink, Download, Key, FileText, CheckCircle2, Copy, Check } from "lucide-react";
 
 type Platform = "deb" | "msi" | "docker";
+type ConnectionMode = "organisation" | "direct";
 
 const platforms: { id: Platform; label: string; icon: string; desc: string }[] = [
   { id: "deb", label: "Linux (DEB)", icon: "🐧", desc: "Debian / Ubuntu" },
@@ -19,39 +22,50 @@ const downloadLinks: Record<Platform, string> = {
   docker: "docker pull dataminer/edge:latest",
 };
 
-const configSnippets: Record<Platform, { path: string; content: string }> = {
-  deb: {
-    path: "/etc/dataminer/edge.conf",
-    content: `# /etc/dataminer/edge.conf
+const configPaths: Record<Platform, string> = {
+  deb: "/etc/dataminer/edge.conf",
+  msi: "C:\\Program Files\\DataMiner Edge\\edge.conf",
+  docker: "docker-compose.yml / environment",
+};
+
+function buildConfigSnippets(
+  directDmsKey: string,
+  directDmsEndpoint: string,
+): Record<ConnectionMode, Record<Platform, { path: string; content: string }>> {
+  return {
+    organisation: {
+    deb: {
+      path: configPaths.deb,
+      content: `# /etc/dataminer/edge.conf
 [General]
-OrganisationKey=<YOUR_ORGANISATION_KEY>
+OrganisationKey=<YOUR_DMS_KEY>
 
 [Connection]
-DmsEndpoint=https://your-dms.dataminer.services
+DmsEndpoint=wss://dataminer.services
 BufferSize=10000
 
 # After installation, restart the service:
 # sudo systemctl restart dataminer-edge`,
-  },
-  msi: {
-    path: "C:\\Program Files\\DataMiner Edge\\edge.conf",
-    content: `; C:\\Program Files\\DataMiner Edge\\edge.conf
+    },
+    msi: {
+      path: configPaths.msi,
+      content: `; C:\Program Files\DataMiner Edge\edge.conf
 [General]
 OrganisationKey=<YOUR_ORGANISATION_KEY>
 
 [Connection]
-DmsEndpoint=https://your-dms.dataminer.services
+DmsEndpoint=wss://dataminer.services
 BufferSize=10000
 
 ; After installation, restart via Services or:
 ; net stop DataMinerEdge && net start DataMinerEdge`,
-  },
-  docker: {
-    path: "docker-compose.yml / environment",
-    content: `# docker run
+    },
+    docker: {
+      path: configPaths.docker,
+      content: `# docker run
 docker run -d \\
   -e DM_ORGANISATION_KEY=<YOUR_ORGANISATION_KEY> \\
-  -e DM_DMS_ENDPOINT=https://your-dms.dataminer.services \\
+  -e DM_DMS_ENDPOINT=wss://dataminer.services \\
   -e DM_BUFFER_SIZE=10000 \\
   --name dataminer-edge \\
   dataminer/edge:latest
@@ -62,13 +76,110 @@ docker run -d \\
 #     image: dataminer/edge:latest
 #     environment:
 #       DM_ORGANISATION_KEY: <YOUR_ORGANISATION_KEY>
-#       DM_DMS_ENDPOINT: https://your-dms.dataminer.services`,
+#       DM_DMS_ENDPOINT: wss://dataminer.services`,
+    },
+  },
+    direct: {
+    deb: {
+      path: configPaths.deb,
+      content: `# /etc/dataminer/edge.conf
+[General]
+DmsKey=${directDmsKey}
+
+[Connection]
+DmsEndpoint=${directDmsEndpoint}
+BufferSize=10000
+
+# After installation, restart the service:
+# sudo systemctl restart dataminer-edge`,
+    },
+    msi: {
+      path: configPaths.msi,
+      content: `; C:\Program Files\DataMiner Edge\edge.conf
+[General]
+DmsKey=${directDmsKey}
+
+[Connection]
+DmsEndpoint=${directDmsEndpoint}
+BufferSize=10000
+
+; After installation, restart via Services or:
+; net stop DataMinerEdge && net start DataMinerEdge`,
+    },
+    docker: {
+      path: configPaths.docker,
+      content: `# docker run
+docker run -d \\
+  -e DM_DMS_KEY=${directDmsKey} \
+  -e DM_DMS_ENDPOINT=${directDmsEndpoint} \
+  -e DM_BUFFER_SIZE=10000 \\
+  --name dataminer-edge \\
+  dataminer/edge:latest
+
+# Or in docker-compose.yml:
+# services:
+#   edge:
+#     image: dataminer/edge:latest
+#     environment:
+#       DM_DMS_KEY: ${directDmsKey}
+#       DM_DMS_ENDPOINT: ${directDmsEndpoint}`,
+    },
+  },
+  };
+}
+
+const connectionModeDetails: Record<
+  ConnectionMode,
+  {
+    title: string;
+    summary: string;
+    requirement: string;
+    sourceTitle: string;
+    sourceSteps: string[];
+    note?: string;
+  }
+> = {
+  organisation: {
+    title: "Default route via dataminer.services",
+    summary:
+      "Use an DMS Key when the Edge Node connects to the DataMiner System through dataminer.services. This is the default onboarding flow.",
+    requirement: "The Edge Node only needs outbound access to dataminer.services.",
+    sourceTitle: "Where to find the key",
+    sourceSteps: [
+      "Log in to admin.dataminer.services",
+      "Under DataMiner Systems, expand the target DataMiner System and navigate to Keys.",
+      "Copy an existing Primary Key or generate a new one.",
+    ],
+    note:
+      "To rotate keys without downtime, configure a second DMS Key on the Edge Node from the location detail page in this UI. Once the node starts using the new key, the old key can be released via admin.dataminer.services.",
+  },
+  direct: {
+    title: "Direct route to the DMS",
+    summary:
+      "Use this alternative only when needed: the Edge Node connects directly to the DataMiner System with a local key instead of using the recommended dataminer.services route.",
+    requirement: "This option requires IP connectivity between the Edge Node and the DMS.",
+    sourceTitle: "How to prepare direct onboarding",
+    sourceSteps: [
+      "Confirm the first direct DMS key in Settings",
+      "Confirm the saved DMS endpoint in Settings",
+      "Copy the ready-made configuration below to the Edge Node",
+    ],
   },
 };
 
 export default function InstallEdge() {
   const [platform, setPlatform] = useState<Platform>("deb");
+  const [connectionMode, setConnectionMode] = useState<ConnectionMode>("organisation");
   const [copiedStep, setCopiedStep] = useState<string | null>(null);
+  const [directDmsSettings] = useDirectDmsSettings();
+
+  const configSnippets = buildConfigSnippets(
+    directDmsSettings.keys.first?.value ?? "<YOUR_DMS_KEY>",
+    directDmsSettings.endpoint,
+  );
+
+  const selectedConfig = configSnippets[connectionMode][platform];
+  const selectedModeDetails = connectionModeDetails[connectionMode];
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -173,57 +284,84 @@ export default function InstallEdge() {
         </CardContent>
       </Card>
 
-      {/* Step 2: Organisation Key */}
+      {/* Step 2: Connection method */}
       <Card className="shadow-sm">
         <CardHeader className="py-4">
           <div className="flex items-center gap-3">
             <Badge className="w-7 h-7 rounded-full flex items-center justify-center p-0 text-xs font-bold">
               2
             </Badge>
-            <CardTitle className="text-base">Get your Organisation Key</CardTitle>
+            <CardTitle className="text-base">Choose how the Edge Node connects</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="pt-0 pb-4 space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Obtain your Organisation Key from the DataMiner Admin portal. This key authenticates
-            the Edge Node with your DataMiner System.
-          </p>
-          <Button variant="outline" size="sm" asChild>
-            <a href="https://admin.dataminer.services" target="_blank" rel="noopener noreferrer">
-              <Key className="w-3.5 h-3.5 mr-2" />
-              Open admin.dataminer.services
-              <ExternalLink className="w-3 h-3 ml-1.5" />
-            </a>
-          </Button>
-          <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm">
-            <p className="font-medium text-foreground mb-1">Where to find the key</p>
+          <Tabs value={connectionMode} onValueChange={(value) => setConnectionMode(value as ConnectionMode)}>
+            <TabsList className="grid w-full grid-cols-2 h-auto gap-1 bg-muted/70">
+              <TabsTrigger value="organisation" className="py-2 text-left">Organisation Key</TabsTrigger>
+              <TabsTrigger value="direct" className="py-2 text-left">Direct DMS Key</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="organisation" className="space-y-3">
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm space-y-2">
+                <p className="font-medium text-foreground">{connectionModeDetails.organisation.title}</p>
+                <p className="text-muted-foreground">{connectionModeDetails.organisation.summary}</p>
+                <p className="text-xs text-foreground">{connectionModeDetails.organisation.requirement}</p>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <a href="https://admin.dataminer.services" target="_blank" rel="noopener noreferrer">
+                  <Key className="w-3.5 h-3.5 mr-2" />
+                  Open admin.dataminer.services
+                  <ExternalLink className="w-3 h-3 ml-1.5" />
+                </a>
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="direct" className="space-y-3">
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm space-y-2">
+                <p className="font-medium text-foreground">{connectionModeDetails.direct.title}</p>
+                <p className="text-muted-foreground">{connectionModeDetails.direct.summary}</p>
+                <p className="text-xs text-foreground">{connectionModeDetails.direct.requirement}</p>
+              </div>
+              <div className="bg-muted/60 border border-border rounded-lg p-3 text-xs text-muted-foreground space-y-2">
+                <p>
+                  The direct configuration below is pre-filled with the first generated DMS key and the saved DMS endpoint from Settings.
+                </p>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/settings">Open Settings</Link>
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <div className="bg-muted/60 border border-border rounded-lg p-3 text-sm space-y-2">
+            <p className="font-medium text-foreground">{selectedModeDetails.sourceTitle}</p>
             <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-              <li>Log in to admin.dataminer.services</li>
-              <li>
-                Navigate to <span className="font-mono text-foreground">Organisation</span> →{" "}
-                <span className="font-mono text-foreground">Keys</span>
-              </li>
-              <li>Copy an existing Organisation Key or generate a new one</li>
+              {selectedModeDetails.sourceSteps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
             </ol>
           </div>
-          <div className="bg-muted/60 border border-border rounded-lg p-3 text-xs text-muted-foreground space-y-1.5">
-            <p className="font-medium text-foreground flex items-center gap-1.5">
-              <Key className="w-3 h-3" /> Key rotation
-            </p>
-            <p>
-              To rotate keys without downtime, configure a second Organisation Key on the Edge Node
-              from the location detail page in this UI. Once the node starts using the new key,
-              the old key can be released via{" "}
-              <a
-                href="https://admin.dataminer.services"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                admin.dataminer.services
-              </a>.
-            </p>
-          </div>
+
+          {selectedModeDetails.note && (
+            <div className="bg-muted/60 border border-border rounded-lg p-3 text-xs text-muted-foreground space-y-1.5">
+              <p className="font-medium text-foreground flex items-center gap-1.5">
+                <Key className="w-3 h-3" /> Key rotation
+              </p>
+              <p>
+                To rotate keys without downtime, configure a second Organisation Key on the Edge Node
+                from the location detail page in this UI. Once the node starts using the new key,
+                the old key can be released via{" "}
+                <a
+                  href="https://admin.dataminer.services"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  admin.dataminer.services
+                </a>.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -239,14 +377,18 @@ export default function InstallEdge() {
         </CardHeader>
         <CardContent className="pt-0 pb-4 space-y-3">
           <p className="text-sm text-muted-foreground">
-            {platform === "docker"
-              ? "Pass the Organisation Key as an environment variable:"
-              : `Edit the configuration file at:`}
+            {connectionMode === "organisation"
+              ? platform === "docker"
+                ? "Pass the Organisation Key as an environment variable:"
+                : "Edit the configuration file and add the Organisation Key:"
+              : platform === "docker"
+                ? "Pass the DMS key and direct endpoint as environment variables:"
+                : "Edit the configuration file and add the DMS key with the direct endpoint:"}
           </p>
           {platform !== "docker" && (
             <div className="bg-muted rounded-lg px-3 py-2 flex items-center justify-between">
-              <code className="text-sm font-mono">{configSnippets[platform].path}</code>
-              <CopyButton text={configSnippets[platform].path} id="config-path" />
+              <code className="text-sm font-mono">{selectedConfig.path}</code>
+              <CopyButton text={selectedConfig.path} id="config-path" />
             </div>
           )}
           <div className="relative">
@@ -254,18 +396,27 @@ export default function InstallEdge() {
               <div className="flex items-center gap-2">
                 <FileText className="w-3 h-3 text-muted-foreground" />
                 <span className="text-[11px] text-muted-foreground font-mono">
-                  {platform === "docker" ? "Terminal" : configSnippets[platform].path}
+                  {platform === "docker" ? "Terminal" : selectedConfig.path}
                 </span>
               </div>
-              <CopyButton text={configSnippets[platform].content} id="config-content" />
+              <CopyButton text={selectedConfig.content} id="config-content" />
             </div>
             <pre className="bg-muted rounded-b-lg p-4 text-xs font-mono text-foreground overflow-x-auto border border-t-0 border-border whitespace-pre-wrap">
-              {configSnippets[platform].content}
+              {selectedConfig.content}
             </pre>
           </div>
           <p className="text-xs text-muted-foreground">
-            Replace <code className="text-foreground font-mono text-[11px]">&lt;YOUR_ORGANISATION_KEY&gt;</code> with
-            the key from Step 2.
+            {connectionMode === "organisation" ? (
+              <>
+                Replace <code className="text-foreground font-mono text-[11px]">&lt;YOUR_ORGANISATION_KEY&gt;</code> with the
+                key from Step 2.
+              </>
+            ) : (
+              <>
+                The configuration already includes the first generated DMS key and saved <code className="text-foreground font-mono text-[11px]">DmsEndpoint</code> from Settings.
+                Update them on the <Link to="/settings" className="text-primary hover:underline">Settings page</Link> if the target DMS changes.
+              </>
+            )}
           </p>
         </CardContent>
       </Card>
