@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getLocation, ScriptedConnector, Schedule } from "@/data/mockData";
+import { getNodeView, ScriptedConnector, Schedule } from "@/data/mockData";
 import { StatusIndicator } from "@/components/StatusIndicator";
 import { BufferStatus } from "@/components/BufferStatus";
 import { BandwidthChart } from "@/components/BandwidthChart";
@@ -27,21 +27,21 @@ export default function LocationDetail() {
   const { locationId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const location = getLocation(locationId || '');
+  const nodeView = getNodeView(locationId || '');
   const [showNodeLog, setShowNodeLog] = useState(false);
   const [connectorLogId, setConnectorLogId] = useState<string | null>(null);
   const [expandedConnector, setExpandedConnector] = useState<string | null>(null);
 
-  if (!location) {
+  if (!nodeView) {
     return (
       <div className="text-center py-20 text-muted-foreground">
-        <p>Location not found.</p>
+        <p>Node not found.</p>
         <Button variant="outline" className="mt-4" onClick={() => navigate('/')}>Go back</Button>
       </div>
     );
   }
 
-  const node = location.nodes[0]; // one node per location for now
+  const node = nodeView.node;
 
   const handleRemoveConnector = (connectorId: string) => {
     toast({ title: "Connector removed", description: `${connectorId} has been removed (prototype).` });
@@ -57,7 +57,7 @@ export default function LocationDetail() {
       <div className="flex items-center gap-2 text-sm">
         <button onClick={() => navigate('/')} className="text-primary hover:underline">Overview</button>
         <span className="text-muted-foreground">/</span>
-        <span className="text-foreground font-medium">{location.name}</span>
+        <span className="text-foreground font-medium">{nodeView.displayName}</span>
       </div>
 
       <div className="flex flex-col lg:flex-row lg:items-start gap-6">
@@ -66,10 +66,10 @@ export default function LocationDetail() {
           <div>
             <div className="flex items-center gap-3">
               <MapPin className="w-5 h-5 text-primary" />
-              <h1 className="text-2xl font-bold">{location.name}</h1>
+              <h1 className="text-2xl font-bold">{nodeView.displayName}</h1>
             </div>
-            {location.description && (
-              <p className="text-sm text-muted-foreground mt-1 ml-8">{location.description}</p>
+            {!nodeView.description && ( /*there's no node description - only a name*/
+              <p className="text-sm text-muted-foreground mt-1 ml-8">{nodeView.description}</p>
             )}
           </div>
 
@@ -93,7 +93,7 @@ export default function LocationDetail() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <InfoCard label="Last Packet" value={formatDistanceToNow(new Date(node.lastPacketReceived)) + ' ago'} />
                   <InfoCard label="Bandwidth" value={node.bandwidthKbps > 0 ? `${(node.bandwidthKbps / 1000).toFixed(1)} Mbps` : 'N/A'} />
-                  <InfoCard label="Accepted" value={node.packetStats.accepted.toLocaleString()} />
+                  <InfoCard label="Accepted" value={false && node.packetStats.accepted.toLocaleString()} />
                   <InfoCard label="Dropped" value={node.packetStats.dropped.toLocaleString()} />
                 </div>
                 <BufferStatus stats={node.packetStats} />
@@ -131,16 +131,16 @@ export default function LocationDetail() {
 
       {showNodeLog && node && <LogViewer title={node.name} onClose={() => setShowNodeLog(false)} />}
 
-      <BandwidthChart title={`Bandwidth — ${location.name} (24h)`} />
+      <BandwidthChart title={`Bandwidth — ${nodeView.displayName} (24h)`} />
 
       {/* Connectors */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Scripted Connectors</h2>
-          <span className="text-xs text-muted-foreground">{location.connectors.length} deployed</span>
+          <span className="text-xs text-muted-foreground">{nodeView.connectors.length} deployed</span>
         </div>
         <div className="space-y-3">
-          {location.connectors.map(connector => (
+          {nodeView.connectors.map(connector => (
             <ConnectorSection
               key={connector.id}
               connector={connector}

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { locations, allNodes, allConnectors, pendingNodes } from "@/data/mockData";
+import { allNodes, allConnectors, nodeViews, pendingNodes } from "@/data/mockData";
 import { StatusIndicator } from "@/components/StatusIndicator";
 import { BufferStatus } from "@/components/BufferStatus";
 import { BandwidthChart } from "@/components/BandwidthChart";
@@ -17,14 +17,14 @@ export default function Overview() {
   return (
     <div className="space-y-6 animate-slide-up max-w-6xl">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Location Overview</h1>
-        <p className="text-sm text-muted-foreground mt-1">Locations, nodes and connectors at a glance</p>
+        <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
+        <p className="text-sm text-muted-foreground mt-1">Nodes and scripted connectors at a glance</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+         
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {[
-          { label: 'Locations', value: locations.length, icon: MapPin, color: 'text-primary' },
+         // { label: 'Locations', value: nodes.length, icon: MapPin, color: 'text-primary' },
           { label: 'Nodes', value: allNodes.length, icon: Server, color: 'text-foreground' },
           { label: 'Online', value: onlineCount, icon: Wifi, color: 'text-success' },
           { label: 'Recovering', value: recoveringCount, icon: Activity, color: 'text-warning' },
@@ -60,39 +60,39 @@ export default function Overview() {
         </Card>
       )}
 
-      {/* Locations */}
+      {/* Nodes */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">Locations</h2>
-          <span className="text-xs text-muted-foreground">{allConnectors.length} connectors across {locations.length} locations</span>
+          <h2 className="text-lg font-semibold">Nodes</h2>
+          <span className="text-xs text-muted-foreground">{allConnectors.length} connectors across {nodeViews.length} nodes</span>
         </div>
         <div className="space-y-3">
-          {locations.map(location => {
-            const node = location.nodes[0]; // one node per location for now
-            const totalBw = location.connectors.reduce((s, c) => s + c.bandwidthKbps, 0);
-            const hasErrors = location.connectors.some(c => c.status === 'error');
+          {nodeViews.map((item) => {
+            const node = item.node;
+            const totalBw = item.connectors.reduce((s, c) => s + c.bandwidthKbps, 0);
+            const hasErrors = item.connectors.some((c) => c.status === 'error');
             const isRecovering = node?.packetStats.isRecovering;
 
             return (
               <Card
-                key={location.id}
+                key={item.id}
                 className="cursor-pointer hover:shadow-md hover:border-primary/20 transition-all shadow-sm"
-                onClick={() => navigate(`/locations/${location.id}`)}
+                onClick={() => navigate(`/nodes/${item.id}`)}
               >
                 <CardContent className="py-4">
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
                         <MapPin className="w-4 h-4 text-primary shrink-0" />
-                        <h3 className="font-semibold text-sm">{location.name}</h3>
+                        <h3 className="font-semibold text-sm">{item.displayName}</h3>
                         {node && <StatusIndicator status={node.status} />}
                         {hasErrors && <Badge variant="destructive" className="text-[10px]">Error</Badge>}
                       </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground ml-7">
                         {node && <span className="font-mono">{node.ipAddress}</span>}
                         {node && <span>v{node.version}</span>}
-                        <span>{location.connectors.length} connector(s)</span>
-                        <span>{location.connectors.filter(c => c.schedules.some(s => s.enabled)).length} active schedule(s)</span>
+                        <span>{item.connectors.length} connector(s)</span>
+                        <span>{item.connectors.filter((c) => c.schedules.some((s) => s.enabled)).length} active schedule(s)</span>
                       </div>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-4 lg:items-center">
