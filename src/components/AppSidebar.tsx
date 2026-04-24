@@ -1,5 +1,5 @@
 import React from "react";
-import { Blocks, AlertTriangle, LayoutDashboard, Settings, MapPin, Download, ChevronsLeftRightEllipsis } from "lucide-react";
+import { Blocks, AlertTriangle, LayoutDashboard, Settings, Cpu, Download, ChevronsLeftRightEllipsis } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { pendingNodes } from "@/data/mockData";
@@ -17,9 +17,9 @@ import {
 
 const navItems: { title: string; url: string; icon: React.ElementType; badge?: number }[] = [
   { title: "Overview", url: "/", icon: LayoutDashboard },
-  { title: "Nodes", url: "/nodes", icon: MapPin },
+  { title: "Nodes", url: "/nodes", icon: Cpu },
   { title: "Connectors", url: "/connectors", icon: ChevronsLeftRightEllipsis },
-  { title: "Install Node", url: "/install", icon: Download },
+ // { title: "Install Node", url: "/install", icon: Download },
  // { title: "Pending Approvals", url: "/approvals", icon: AlertTriangle, badge: pendingNodes.length },
   { title: "Settings", url: "/settings", icon: Settings },
 ];

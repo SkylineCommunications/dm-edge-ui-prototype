@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { MapPin, ArrowRight, Plus, AlertTriangle, ArrowUpRight } from "lucide-react";
+import { Cpu, ArrowRight, Plus, AlertTriangle, ArrowUpRight } from "lucide-react";
 
 export default function Locations() {
   const navigate = useNavigate();
@@ -62,7 +62,6 @@ export default function Locations() {
       <div className="space-y-3">
         {filteredNodes.map((item) => {
           const node = item.node;
-          const totalBw = item.connectors.reduce((s, c) => s + c.bandwidthKbps, 0);
           const hasErrors = item.connectors.some((c) => c.status === 'error');
           const isRecovering = node?.packetStats.isRecovering;
 
@@ -76,10 +75,8 @@ export default function Locations() {
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
-                      <MapPin className="w-4 h-4 text-primary shrink-0" />
+                      <Cpu className="w-4 h-4 text-primary shrink-0" />
                       <h3 className="font-semibold text-sm">{item.displayName}</h3>
-                      {node && <StatusIndicator status={node.status} />}
-                      {hasErrors && <Badge variant="destructive" className="text-[10px]">Error</Badge>}
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground ml-7">
                       {node && <span className="font-mono">{node.ipAddress}</span>}
@@ -88,16 +85,15 @@ export default function Locations() {
                       <span>{item.connectors.filter((c) => c.schedules.some((s) => s.enabled)).length} active schedule(s)</span>
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-4 lg:items-center">
-                    <div className="text-xs font-mono text-primary font-medium">
-                      {totalBw > 0 ? `${(totalBw / 1000).toFixed(1)} Mbps` : '—'}
-                    </div>
+                  <div className="flex flex-col sm:flex-row gap-2 lg:items-center">
+                    {node && <StatusIndicator status={node.status} />}
+                    {hasErrors && <Badge variant="destructive" className="text-[10px]">Error</Badge>}
                     <ArrowRight className="w-4 h-4 text-muted-foreground hidden lg:block" />
                   </div>
                 </div>
                 {isRecovering && node && (
                   <div className="mt-3 pt-3 border-t">
-                    <BufferStatus stats={node.packetStats} />
+                    <BufferStatus stats={node.packetStats} showPacketCounts={false} />
                   </div>
                 )}
               </CardContent>
