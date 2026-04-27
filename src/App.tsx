@@ -20,7 +20,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.DEV ? "/" : "/dm-edge-ui-prototype/"}>
         <AppLayout>
           <Routes>
             <Route path="/" element={<Overview />} />
