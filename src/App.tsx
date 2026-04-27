@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/AppLayout";
 import Overview from "./pages/Overview";
+import Locations from "./pages/Locations";
 import LocationDetail from "./pages/LocationDetail";
 import ConnectorsOverview from "./pages/ConnectorsOverview";
 import PendingApprovals from "./pages/PendingApprovals";
@@ -23,6 +24,9 @@ const App = () => (
         <AppLayout>
           <Routes>
             <Route path="/" element={<Overview />} />
+            <Route path="/nodes" element={<Locations />} />
+            <Route path="/nodes/:locationId" element={<LocationDetail />} />
+            <Route path="/locations" element={<Locations />} />
             <Route path="/locations/:locationId" element={<LocationDetail />} />
             <Route path="/connectors" element={<ConnectorsOverview />} />
             <Route path="/install" element={<InstallEdge />} />

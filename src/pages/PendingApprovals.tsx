@@ -12,15 +12,15 @@ import { useToast } from "@/hooks/use-toast";
 export default function PendingApprovals() {
   const { toast } = useToast();
   const [nodes, setNodes] = useState(pendingNodes);
-  const [locations, setLocations] = useState<Record<string, string>>({});
+  const [nodeNames, setNodeNames] = useState<Record<string, string>>({});
 
   const handleApprove = (id: string) => {
-    if (!locations[id]) {
-      toast({ title: "Location required", description: "Please assign a location name before approving.", variant: "destructive" });
+    if (!nodeNames[id]) {
+      toast({ title: "Node name required", description: "Please assign a node name before approving.", variant: "destructive" });
       return;
     }
     setNodes(prev => prev.filter(n => n.id !== id));
-    toast({ title: "Node approved", description: `Node approved with location "${locations[id]}"` });
+    toast({ title: "Node approved", description: `Node approved as "${nodeNames[id]}"` });
   };
 
   const handleReject = (id: string) => {
@@ -61,13 +61,13 @@ export default function PendingApprovals() {
                 </div>
                 <div className="flex items-end gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor={`loc-${node.id}`} className="text-xs">Location Name</Label>
+                    <Label htmlFor={`node-${node.id}`} className="text-xs">Node Name</Label>
                     <Input
-                      id={`loc-${node.id}`}
-                      placeholder="e.g. NYC Warehouse"
+                      id={`node-${node.id}`}
+                      placeholder="e.g. Edge Brussels 01"
                       className="h-8 text-sm w-48"
-                      value={locations[node.id!] || ''}
-                      onChange={(e) => setLocations(prev => ({ ...prev, [node.id!]: e.target.value }))}
+                      value={nodeNames[node.id!] || ''}
+                      onChange={(e) => setNodeNames(prev => ({ ...prev, [node.id!]: e.target.value }))}
                     />
                   </div>
                   <Button size="sm" onClick={() => handleApprove(node.id!)}>

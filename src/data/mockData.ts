@@ -54,6 +54,15 @@ export interface Location {
   nodes: EdgeNode[];
 }
 
+export interface NodeView {
+  id: string;
+  locationId: string;
+  displayName: string;
+  description?: string;
+  node: EdgeNode;
+  connectors: ScriptedConnector[];
+}
+
 // Define nodes separately, then group into locations
 const brusselsNode: EdgeNode = {
   id: 'node-001',
@@ -186,6 +195,112 @@ const munichConnectors: ScriptedConnector[] = [
   },
 ];
 
+const extraLocationSeeds = [
+  { name: 'Paris Hub', description: 'Regional operations hub in Paris' },
+  { name: 'London Exchange', description: 'Exchange point monitoring in London' },
+  { name: 'Madrid Plant', description: 'Production monitoring in Madrid' },
+  { name: 'Milan Facility', description: 'Facility operations in Milan' },
+  { name: 'Prague Transit', description: 'Transit systems in Prague' },
+  { name: 'Vienna Utility', description: 'Utility telemetry in Vienna' },
+  { name: 'Zurich Banking', description: 'Secure branch monitoring in Zurich' },
+  { name: 'Copenhagen Port', description: 'Port logistics in Copenhagen' },
+  { name: 'Stockholm Grid', description: 'Grid edge monitoring in Stockholm' },
+  { name: 'Dublin Office', description: 'Office network observability in Dublin' },
+  { name: 'Lisbon Coastal', description: 'Coastal infrastructure in Lisbon' },
+  { name: 'Warsaw Metro', description: 'Metro systems telemetry in Warsaw' },
+  { name: 'Budapest Depot', description: 'Depot operations in Budapest' },
+  { name: 'Athens Terminal', description: 'Terminal operations in Athens' },
+];
+
+const extraStatuses: NodeStatus[] = [
+  'online',
+  'online',
+  'recovering',
+  'online',
+  'offline',
+  'online',
+  'online',
+  'recovering',
+  'online',
+  'offline',
+  'online',
+  'online',
+  'recovering',
+  'online',
+];
+
+const additionalLocations: Location[] = extraLocationSeeds.map((seed, index) => {
+  const number = index + 4;
+  const locationId = `loc-${String(number).padStart(3, '0')}`;
+  const nodeId = `node-${String(number).padStart(3, '0')}`;
+  const connectorId = `sc-${String(number + 6).padStart(3, '0')}`;
+  const scheduleId = `sch-${String(number + 7).padStart(3, '0')}`;
+  const status = extraStatuses[index];
+  const isRecovering = status === 'recovering';
+  const isOffline = status === 'offline';
+
+  const node: EdgeNode = {
+    id: nodeId,
+    name: `Edge-${seed.name.split(' ')[0]}-01`,
+    locationId,
+    status,
+    lastPacketReceived: isOffline ? '2026-03-22T23:10:00Z' : '2026-03-24T14:31:00Z',
+    registeredAt: `2026-02-${String((index % 20) + 3).padStart(2, '0')}T08:30:00Z`,
+    approvedAt: `2026-02-${String((index % 20) + 3).padStart(2, '0')}T09:00:00Z`,
+    ipAddress: `10.42.${number}.20`,
+    version: '1.4.2',
+    bandwidthKbps: isOffline ? 0 : 900 + index * 120,
+    packetStats: {
+      accepted: 60000 + index * 3400,
+      dropped: isRecovering ? 120 + index * 5 : index % 4,
+      dropReason: isRecovering ? 'queue_full' : undefined,
+      bufferSize: isRecovering ? 1800 + index * 100 : 0,
+      bufferCapacity: 10000,
+      isRecovering,
+    },
+  };
+
+  const connector: ScriptedConnector = {
+    id: connectorId,
+    name: index % 3 === 0 ? 'SNMP Poller' : index % 3 === 1 ? 'HTTP Health Check' : 'Modbus TCP Reader',
+    version: '2.1.0',
+    status: isOffline ? 'stopped' : 'running',
+    locationId,
+    arguments: {
+      target: `10.42.${number}.100`,
+      timeout: '3000',
+    },
+    bandwidthKbps: isOffline ? 0 : 500 + index * 80,
+    packetStats: {
+      accepted: 24000 + index * 1800,
+      dropped: isRecovering ? 30 + index : 0,
+      dropReason: isRecovering ? 'queue_full' : undefined,
+      bufferSize: isRecovering ? 700 + index * 40 : 0,
+      bufferCapacity: 5000,
+      isRecovering,
+    },
+    schedules: [
+      {
+        id: scheduleId,
+        name: 'Every 5 min',
+        cron: '*/5 * * * *',
+        enabled: !isOffline,
+        arguments: { profile: 'default' },
+        lastRun: isOffline ? '2026-03-22T23:05:00Z' : '2026-03-24T14:30:00Z',
+        nextRun: isOffline ? undefined : '2026-03-24T14:35:00Z',
+      },
+    ],
+  };
+
+  return {
+    id: locationId,
+    name: seed.name,
+    description: seed.description,
+    nodes: [node],
+    connectors: [connector],
+  };
+});
+
 export const locations: Location[] = [
   {
     id: 'loc-001',
@@ -208,14 +323,33 @@ export const locations: Location[] = [
     nodes: [munichNode],
     connectors: munichConnectors,
   },
+  ...additionalLocations,
 ];
 
 // Convenience accessors
 export const allNodes: EdgeNode[] = locations.flatMap(l => l.nodes);
 export const allConnectors: ScriptedConnector[] = locations.flatMap(l => l.connectors);
 
+export const nodeViews: NodeView[] = locations.flatMap((location) => {
+  const node = location.nodes[0];
+  if (!node) return [];
+
+  return [
+    {
+      id: node.id,
+      locationId: location.id,
+      displayName: location.name,
+      description: location.description,
+      node,
+      connectors: location.connectors,
+    },
+  ];
+});
+
 export const getLocation = (id: string) => locations.find(l => l.id === id);
 export const getLocationForNode = (nodeId: string) => locations.find(l => l.nodes.some(n => n.id === nodeId));
+export const getNodeView = (id: string) => nodeViews.find((view) => view.id === id || view.locationId === id);
+export const getNodeViewByLocationId = (locationId: string) => nodeViews.find((view) => view.locationId === locationId);
 
 // Keep backward compat for pending nodes (not yet assigned to a location)
 export const pendingNodes: Partial<EdgeNode>[] = [
