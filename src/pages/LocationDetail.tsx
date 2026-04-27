@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getNodeView, ScriptedConnector, Schedule } from "@/data/mockData";
+import { getNodeView, ScriptedConnector, Schedule, BufferingConfig } from "@/data/mockData";
 import { StatusIndicator } from "@/components/StatusIndicator";
 import { BufferStatus } from "@/components/BufferStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription
 } from "@/components/ui/dialog";
 import {
-  FileText, Clock, ChevronDown, ChevronRight, Cpu, ShieldBan, Key
+  FileText, Clock, ChevronDown, ChevronRight, Cpu, ShieldBan, Key, Database
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,7 @@ export default function LocationDetail() {
   const { toast } = useToast();
   const nodeView = getNodeView(locationId || '');
   const [expandedConnector, setExpandedConnector] = useState<string | null>(null);
+  const [bufferingConfig, setBufferingConfig] = useState<BufferingConfig | undefined>(nodeView?.node.bufferingConfig);
 
   if (!nodeView) {
     return (
@@ -79,6 +80,15 @@ export default function LocationDetail() {
                   <InfoCard label="Last Packet" value={formatDistanceToNow(new Date(node.lastPacketReceived)) + ' ago'} />
                 </div>
                 {node.packetStats.isRecovering && <BufferStatus stats={node.packetStats} />}
+                {bufferingConfig && (
+                  <>
+                    <Separator />
+                    <div className="grid grid-cols-2 gap-3">
+                      <InfoCard label="Buffer Size (MB)" value={bufferingConfig.bufferSizeMB.toString()} />
+                      <InfoCard label="Buffer File Size (MB)" value={bufferingConfig.bufferFileSizeMB.toString()} />
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           )}
@@ -88,9 +98,19 @@ export default function LocationDetail() {
         <div className="flex flex-col gap-2 lg:w-56">
           {node && (
             <>
-              <CollectLogsDialog triggerLabel="Collect Node Logs" targetName={node.name} />
+              <CollectLogsDialog triggerLabel="Collect Node Logs" targetName={node.name} nodeStatus={node.status} />
+              <BufferingDialog
+                nodeName={node.name}
+                nodeStatus={node.status}
+                bufferingConfig={bufferingConfig}
+                onSave={(config) => {
+                  setBufferingConfig(config);
+                  toast({ title: "Buffering configured", description: `Buffering configuration has been updated on ${node.name}.` });
+                }}
+              />
               <KeyRotationDialog
                 nodeName={node.name}
+                nodeStatus={node.status}
                 onSave={() => toast({ title: "Key configured", description: `Second Organisation Key has been configured on ${node.name}.` })}
               />
               <BanNodeDialog
@@ -160,8 +180,7 @@ function ConnectorSection({
             <Badge variant="secondary" className="text-[10px] font-mono">v{connector.version}</Badge>
             <span className={`text-xs font-medium capitalize ${statusColors[connector.status]}`}>{connector.status}</span>
           </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="font-mono">{connector.bandwidthKbps > 0 ? `${(connector.bandwidthKbps / 1000).toFixed(1)} Mbps` : '—'}</span>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">            
             <span>{connector.schedules.length} schedule(s)</span>
           </div>
         </div>
@@ -202,11 +221,14 @@ function ConnectorSection({
 function CollectLogsDialog({
   triggerLabel,
   targetName,
+  nodeStatus,
 }: {
   triggerLabel: string;
   targetName: string;
+  nodeStatus: string;
 }) {
   const { toast } = useToast();
+  const isOffline = nodeStatus === 'offline';
 
   const handleDownload = () => {
     const safeTarget = targetName.replace(/[^a-zA-Z0-9-_]/g, "-").toLowerCase();
@@ -237,7 +259,7 @@ function CollectLogsDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" disabled={isOffline} title={isOffline ? "Node is offline" : ""}>
           <FileText className="w-3 h-3 mr-2" /> {triggerLabel}
         </Button>
       </DialogTrigger>
@@ -298,11 +320,89 @@ function ScheduleRow({
   );
 }
 
-function KeyRotationDialog({ nodeName, onSave }: { nodeName: string; onSave: () => void }) {
+function BufferingDialog({ nodeName, nodeStatus, bufferingConfig, onSave }: { nodeName: string; nodeStatus: string; bufferingConfig?: BufferingConfig; onSave: (config: BufferingConfig) => void }) {
+  const [bufferSize, setBufferSize] = useState(bufferingConfig?.bufferSizeMB.toString() || "1024");
+  const [bufferFileSize, setBufferFileSize] = useState(bufferingConfig?.bufferFileSizeMB.toString() || "5120");
+  const isOffline = nodeStatus === 'offline';
+
+  const handleSave = () => {
+    const config: BufferingConfig = {
+      bufferSizeMB: parseInt(bufferSize),
+      bufferFileSizeMB: parseInt(bufferFileSize),
+    };
+    onSave(config);
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" disabled={isOffline} title={isOffline ? "Node is offline" : ""}>
+          <Database className="w-3 h-3 mr-2" /> Configure Buffering
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Configure Node Buffering</DialogTitle>
+          <DialogDescription>
+            Configure buffering settings for <strong>{nodeName}</strong> to optimize packet processing and recovery during network outages.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="buffer-size" className="text-xs">Buffer Size (MB)</Label>
+            <Input
+              id="buffer-size"
+              className="h-8 text-xs"
+              type="number"
+              value={bufferSize}
+              onChange={(e) => setBufferSize(e.target.value)}
+              min="256"
+              max="8192"
+            />
+            <p className="text-[11px] text-muted-foreground">In-memory buffer for packet storage (256-8192 MB)</p>
+          </div>
+          <Separator />
+          <div className="space-y-1.5">
+            <Label htmlFor="buffer-file-size" className="text-xs">Buffer File Size (MB)</Label>
+            <Input
+              id="buffer-file-size"
+              className="h-8 text-xs"
+              type="number"
+              value={bufferFileSize}
+              onChange={(e) => setBufferFileSize(e.target.value)}
+              min="512"
+              max="102400"
+            />
+            <p className="text-[11px] text-muted-foreground">On-disk buffer file size when in-memory buffer is full (512-102400 MB)</p>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+            <p className="text-[11px] text-blue-900">
+              <span className="font-medium">How it works:</span> When the in-memory buffer fills up, packets will be written to disk. When the disk buffer is full, the oldest data will be dropped to make room for new packets.
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+          <DialogClose asChild>
+            <Button onClick={handleSave}>
+              <Database className="w-3 h-3 mr-1" /> Save Buffering Settings
+            </Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function KeyRotationDialog({ nodeName, nodeStatus, onSave }: { nodeName: string; nodeStatus: string; onSave: () => void }) {
+  const isOffline = nodeStatus === 'offline';
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" disabled={isOffline} title={isOffline ? "Node is offline" : ""}>
           <Key className="w-3 h-3 mr-2" /> Configure Keys
         </Button>
       </DialogTrigger>

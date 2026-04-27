@@ -9,6 +9,11 @@ export interface DataPacketStats {
   isRecovering: boolean;
 }
 
+export interface BufferingConfig {
+  bufferSizeMB: number;
+  bufferFileSizeMB: number;
+}
+
 export interface Schedule {
   id: string;
   name: string;
@@ -44,6 +49,7 @@ export interface EdgeNode {
   version: string;
   bandwidthKbps: number;
   packetStats: DataPacketStats;
+  bufferingConfig?: BufferingConfig;
 }
 
 export interface Location {
@@ -76,6 +82,7 @@ const brusselsNode: EdgeNode = {
   version: '1.4.2',
   bandwidthKbps: 2450,
   packetStats: { accepted: 148230, dropped: 12, bufferSize: 0, bufferCapacity: 10000, isRecovering: false },
+  bufferingConfig: { bufferSizeMB: 1024, bufferFileSizeMB: 5120 },
 };
 
 const amsterdamNode: EdgeNode = {
@@ -90,6 +97,7 @@ const amsterdamNode: EdgeNode = {
   version: '1.4.1',
   bandwidthKbps: 4800,
   packetStats: { accepted: 89100, dropped: 342, dropReason: 'queue_full', bufferSize: 3420, bufferCapacity: 10000, isRecovering: true },
+  bufferingConfig: { bufferSizeMB: 2048, bufferFileSizeMB: 8192 },
 };
 
 const munichNode: EdgeNode = {
@@ -104,6 +112,7 @@ const munichNode: EdgeNode = {
   version: '1.3.8',
   bandwidthKbps: 0,
   packetStats: { accepted: 210400, dropped: 89, bufferSize: 0, bufferCapacity: 10000, isRecovering: false },
+  bufferingConfig: { bufferSizeMB: 512, bufferFileSizeMB: 2048 },
 };
 
 const brusselsConnectors: ScriptedConnector[] = [
@@ -229,6 +238,56 @@ const extraStatuses: NodeStatus[] = [
   'online',
 ];
 
+const TARGET_CONNECTORS_PER_NODE = 10;
+const MIN_SCHEDULES_PER_CONNECTOR = 2;
+
+const buildConnectorSet = (
+  locationId: string,
+  baseConnectors: ScriptedConnector[],
+  nodeStatus: NodeStatus,
+): ScriptedConnector[] => {
+  const isOffline = nodeStatus === 'offline';
+
+  return Array.from({ length: TARGET_CONNECTORS_PER_NODE }, (_, connectorIndex) => {
+    const template = baseConnectors[connectorIndex % baseConnectors.length];
+    const requiredSchedules = Math.max(MIN_SCHEDULES_PER_CONNECTOR, template.schedules.length || 0);
+
+    const schedules: Schedule[] = Array.from({ length: requiredSchedules }, (_, scheduleIndex) => {
+      const scheduleTemplate = template.schedules[scheduleIndex % template.schedules.length] || {
+        id: 'template-schedule',
+        name: 'Every 5 min',
+        cron: '*/5 * * * *',
+        enabled: !isOffline,
+        arguments: { profile: 'default' },
+      };
+
+      return {
+        ...scheduleTemplate,
+        id: `${locationId}-sch-${String(connectorIndex + 1).padStart(2, '0')}-${String(scheduleIndex + 1).padStart(2, '0')}`,
+        enabled: isOffline ? false : scheduleTemplate.enabled,
+      };
+    });
+
+    return {
+      ...template,
+      id: `${locationId}-sc-${String(connectorIndex + 1).padStart(2, '0')}`,
+      name: `${template.name} ${String(connectorIndex + 1).padStart(2, '0')}`,
+      locationId,
+      status: isOffline ? 'stopped' : template.status,
+      bandwidthKbps: isOffline ? 0 : template.bandwidthKbps + connectorIndex * 20,
+      arguments: {
+        ...template.arguments,
+        instance: String(connectorIndex + 1),
+      },
+      packetStats: {
+        ...template.packetStats,
+        accepted: template.packetStats.accepted + connectorIndex * 750,
+      },
+      schedules,
+    };
+  });
+};
+
 const additionalLocations: Location[] = extraLocationSeeds.map((seed, index) => {
   const number = index + 4;
   const locationId = `loc-${String(number).padStart(3, '0')}`;
@@ -297,7 +356,7 @@ const additionalLocations: Location[] = extraLocationSeeds.map((seed, index) => 
     name: seed.name,
     description: seed.description,
     nodes: [node],
-    connectors: [connector],
+    connectors: buildConnectorSet(locationId, [connector], status),
   };
 });
 
@@ -307,21 +366,21 @@ export const locations: Location[] = [
     name: 'Brussels Data Center',
     description: 'Primary data center in Brussels',
     nodes: [brusselsNode],
-    connectors: brusselsConnectors,
+    connectors: buildConnectorSet('loc-001', brusselsConnectors, brusselsNode.status),
   },
   {
     id: 'loc-002',
     name: 'Amsterdam Warehouse',
     description: 'Warehouse monitoring in Amsterdam',
     nodes: [amsterdamNode],
-    connectors: amsterdamConnectors,
+    connectors: buildConnectorSet('loc-002', amsterdamConnectors, amsterdamNode.status),
   },
   {
     id: 'loc-003',
     name: 'Munich Factory Floor',
     description: 'Factory floor monitoring in Munich',
     nodes: [munichNode],
-    connectors: munichConnectors,
+    connectors: buildConnectorSet('loc-003', munichConnectors, munichNode.status),
   },
   ...additionalLocations,
 ];
