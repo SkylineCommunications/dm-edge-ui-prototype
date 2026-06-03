@@ -121,7 +121,7 @@ export default function LocationDetail() {
           )}
         </div>
       </div>
-      {/* Connectors */}
+      {/* Connectors 
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Scripted Connectors</h2>
@@ -137,7 +137,7 @@ export default function LocationDetail() {
             />
           ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
@@ -209,9 +209,9 @@ function ConnectorSection({
 
           <Separator />
 
-          <div className="flex flex-wrap gap-2">
-            <CollectLogsDialog triggerLabel="Collect Logs" targetName={connector.name} />
-          </div>
+          {/*<div className="flex flex-wrap gap-2">
+            <CollectLogsDialog triggerLabel="Collect Logs" targetName={connector.name}" />
+          </div>*/}
         </CardContent>
       )}
     </Card>
