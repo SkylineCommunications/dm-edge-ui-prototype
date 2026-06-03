@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { pendingNodes } from "@/data/mockData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 export default function PendingApprovals() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [nodes, setNodes] = useState(pendingNodes);
   const [nodeNames, setNodeNames] = useState<Record<string, string>>({});
@@ -30,6 +32,12 @@ export default function PendingApprovals() {
 
   return (
     <div className="space-y-6 animate-slide-up max-w-6xl">
+      <div className="flex items-center gap-2 text-sm">
+        <button onClick={() => navigate('/nodes')} className="text-primary hover:underline">Nodes</button>
+        <span className="text-muted-foreground">/</span>
+        <span className="text-foreground font-medium">Pending Approvals</span>
+      </div>
+
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Pending Approvals</h1>
         <p className="text-sm text-muted-foreground mt-1">Review and approve newly registered Edge Nodes</p>

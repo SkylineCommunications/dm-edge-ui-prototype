@@ -3,14 +3,9 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AppLayout } from "@/components/AppLayout";
-import Overview from "./pages/Overview";
 import Locations from "./pages/Locations";
 import LocationDetail from "./pages/LocationDetail";
-import ConnectorsOverview from "./pages/ConnectorsOverview";
 import PendingApprovals from "./pages/PendingApprovals";
-import InstallEdge from "./pages/InstallEdge";
-import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,20 +16,15 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter basename={import.meta.env.DEV ? "/" : "/dm-edge-ui-prototype/"}>
-        <AppLayout>
+        <main className="min-h-screen p-6 overflow-auto">
           <Routes>
-            <Route path="/" element={<Overview />} />
+            <Route path="/" element={<Locations />} />
             <Route path="/nodes" element={<Locations />} />
             <Route path="/nodes/:locationId" element={<LocationDetail />} />
-            <Route path="/locations" element={<Locations />} />
-            <Route path="/locations/:locationId" element={<LocationDetail />} />
-            <Route path="/connectors" element={<ConnectorsOverview />} />
-            <Route path="/install" element={<InstallEdge />} />
             <Route path="/approvals" element={<PendingApprovals />} />
-            <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </AppLayout>
+        </main>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

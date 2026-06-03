@@ -23,8 +23,8 @@ export default function Locations() {
     <div className="space-y-6 animate-slide-up max-w-6xl">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Nodes</h1>
-          <p className="text-sm text-muted-foreground mt-1">All registered edge nodes and their connectors</p>
+          <h1 className="text-2xl font-bold tracking-tight">Edge Nodes</h1>
+          <p className="text-sm text-muted-foreground mt-1">All registered nodes</p>
         </div>
         <Button asChild>
           <a href="https://aka.dataminer.services/EdgeNodeInstallation" target="_blank" rel="noopener noreferrer">
