@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getNodeView, ScriptedConnector, Schedule, BufferingConfig } from "@/data/mockData";
+import { getNodeView, ScriptedConnector, Schedule, BufferingConfig, NodeConnectionMode } from "@/data/mockData";
 import { StatusIndicator } from "@/components/StatusIndicator";
 import { BufferStatus } from "@/components/BufferStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,14 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+
+const DISK_BUFFER_LIMIT_GB = 10;
+
+const getConnectionModeLabel = (mode: NodeConnectionMode) =>
+  mode === "via_dataminer_services" ? "via dataminer.services" : "direct";
+
+const getAuthenticationLabel = (mode: NodeConnectionMode) =>
+  mode === "via_dataminer_services" ? "System Key" : "Local key";
 
 export default function LocationDetail() {
   const { locationId } = useParams();
@@ -46,80 +54,85 @@ export default function LocationDetail() {
         <span className="text-foreground font-medium">{nodeView.displayName}</span>
       </div>
 
-      <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-        {/* Location + Node info */}
-        <div className="flex-1 space-y-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <Cpu className="w-5 h-5 text-primary" />
-              <h1 className="text-2xl font-bold">{nodeView.displayName}</h1>
-            </div>
-            {!nodeView.description && ( /*there's no node description - only a name*/
-              <p className="text-sm text-muted-foreground mt-1 ml-8">{nodeView.description}</p>
-            )}
+      <div className="space-y-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <Cpu className="w-5 h-5 text-primary" />
+            <h1 className="text-2xl font-bold">{nodeView.displayName}</h1>
           </div>
-
-          {/* Node health section */}
-          {node && (
-            <Card className="shadow-sm">
-              <CardHeader className="py-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Cpu className="w-4 h-4 text-muted-foreground" />
-                    <CardTitle className="text-sm">{node.name}</CardTitle>
-                    <StatusIndicator status={node.status} />
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="font-mono">{node.ipAddress}</span>
-                    <span>v{node.version}</span>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0 pb-4 space-y-3">
-                <div className="grid grid-cols-1 gap-3">
-                  <InfoCard label="Last Packet" value={formatDistanceToNow(new Date(node.lastPacketReceived)) + ' ago'} />
-                </div>
-                {node.packetStats.isRecovering && <BufferStatus stats={node.packetStats} />}
-                {bufferingConfig && (
-                  <>
-                    <Separator />
-                    <div className="grid grid-cols-2 gap-3">
-                      <InfoCard label="Buffer Size (MB)" value={bufferingConfig.bufferSizeMB.toString()} />
-                      <InfoCard label="Buffer File Size (MB)" value={bufferingConfig.bufferFileSizeMB.toString()} />
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+          {!nodeView.description && ( /*there's no node description - only a name*/
+            <p className="text-sm text-muted-foreground mt-1 ml-8">{nodeView.description}</p>
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col gap-2 lg:w-56">
-          {node && (
-            <>
-              <CollectLogsDialog triggerLabel="Collect Node Logs" targetName={node.name} nodeStatus={node.status} />
-              <BufferingDialog
-                nodeName={node.name}
-                nodeStatus={node.status}
-                bufferingConfig={bufferingConfig}
-                onSave={(config) => {
-                  setBufferingConfig(config);
-                  toast({ title: "Buffering configured", description: `Buffering configuration has been updated on ${node.name}.` });
-                }}
-              />
-              <KeyRotationDialog
-                nodeName={node.name}
-                nodeStatus={node.status}
-                onSave={() => toast({ title: "Key configured", description: `Second Organisation Key has been configured on ${node.name}.` })}
-              />
-              <BanNodeDialog
-                nodeName={node.name}
-                onBan={() => toast({ title: "Node banned", description: `${node.name} has been banned and will be disconnected.`, variant: "destructive" })}
-              />
-            </>
-          )}
-        </div>
+        {/* Node health section */}
+        {node && (
+          <Card className="shadow-sm">
+            <CardHeader className="py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Cpu className="w-4 h-4 text-muted-foreground" />
+                  <CardTitle className="text-sm">{node.name}</CardTitle>
+                  <StatusIndicator status={node.status} />
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="font-mono">{node.ipAddress}</span>
+                  <span>v{node.version}</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0 pb-4 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <InfoCard label="Last Packet" value={formatDistanceToNow(new Date(node.lastPacketReceived)) + ' ago'} />
+                <InfoCard label="Connection" value={getConnectionModeLabel(node.connectionMode)} />
+                <InfoCard label="Authentication" value={getAuthenticationLabel(node.connectionMode)} />
+              </div>
+              {node.packetStats.isRecovering && <BufferStatus stats={node.packetStats} />}
+              {bufferingConfig && (
+                <>
+                  <Separator />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <InfoCard label="Retention (hours)" value={bufferingConfig.retentionHours.toString()} />
+                    <InfoCard label="Disk Buffer Limit" value={`${DISK_BUFFER_LIMIT_GB} GB (fixed)`} />
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Actions below details pane */}
+        {node && (
+          <div className="flex flex-wrap gap-2">
+            <CollectLogsDialog triggerLabel="Collect Node Logs" targetName={node.name} nodeStatus={node.status} />
+            <BanNodeDialog
+              nodeName={node.name}
+              onBan={() => toast({ title: "Node banned", description: `${node.name} has been banned and will be disconnected.`, variant: "destructive" })}
+            />
+          </div>
+        )}
+
+        {/* Inline configuration sections */}
+        {node && (
+          <>
+            <BufferingConfigSection
+              nodeName={node.name}
+              nodeStatus={node.status}
+              bufferingConfig={bufferingConfig}
+              onSave={(config) => {
+                setBufferingConfig(config);
+                toast({ title: "Buffering configured", description: `Buffering configuration has been updated on ${node.name}.` });
+              }}
+            />
+            <KeyRotationSection
+              nodeName={node.name}
+              nodeStatus={node.status}
+              connectionMode={node.connectionMode}
+              onConfigureSecondKey={() => toast({ title: "Second key configured", description: `A second System Key has been configured on ${node.name}.` })}
+              onGenerateLocalKey={() => toast({ title: "Local key generated", description: `A new local key has been generated on ${node.name}.` })}
+            />
+          </>
+        )}
       </div>
       {/* Connectors 
       <div>
@@ -320,129 +333,151 @@ function ScheduleRow({
   );
 }
 
-function BufferingDialog({ nodeName, nodeStatus, bufferingConfig, onSave }: { nodeName: string; nodeStatus: string; bufferingConfig?: BufferingConfig; onSave: (config: BufferingConfig) => void }) {
-  const [bufferSize, setBufferSize] = useState(bufferingConfig?.bufferSizeMB.toString() || "1024");
-  const [bufferFileSize, setBufferFileSize] = useState(bufferingConfig?.bufferFileSizeMB.toString() || "5120");
+function BufferingConfigSection({ nodeName, nodeStatus, bufferingConfig, onSave }: { nodeName: string; nodeStatus: string; bufferingConfig?: BufferingConfig; onSave: (config: BufferingConfig) => void }) {
+  const [retentionHours, setRetentionHours] = useState(bufferingConfig?.retentionHours.toString() || "6");
   const isOffline = nodeStatus === 'offline';
 
   const handleSave = () => {
+    const parsedRetentionHours = parseInt(retentionHours, 10);
+    if (Number.isNaN(parsedRetentionHours) || parsedRetentionHours < 1) {
+      return;
+    }
+
     const config: BufferingConfig = {
-      bufferSizeMB: parseInt(bufferSize),
-      bufferFileSizeMB: parseInt(bufferFileSize),
+      retentionHours: parsedRetentionHours,
     };
     onSave(config);
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={isOffline} title={isOffline ? "Node is offline" : ""}>
-          <Database className="w-3 h-3 mr-2" /> Configure Buffering
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Configure Node Buffering</DialogTitle>
-          <DialogDescription>
-            Configure buffering settings for <strong>{nodeName}</strong> to optimize packet processing and recovery during network outages.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="buffer-size" className="text-xs">Buffer Size (MB)</Label>
-            <Input
-              id="buffer-size"
-              className="h-8 text-xs"
-              type="number"
-              value={bufferSize}
-              onChange={(e) => setBufferSize(e.target.value)}
-              min="256"
-              max="8192"
-            />
-            <p className="text-[11px] text-muted-foreground">In-memory buffer for packet storage (256-8192 MB)</p>
-          </div>
-          <Separator />
-          <div className="space-y-1.5">
-            <Label htmlFor="buffer-file-size" className="text-xs">Buffer File Size (MB)</Label>
-            <Input
-              id="buffer-file-size"
-              className="h-8 text-xs"
-              type="number"
-              value={bufferFileSize}
-              onChange={(e) => setBufferFileSize(e.target.value)}
-              min="512"
-              max="102400"
-            />
-            <p className="text-[11px] text-muted-foreground">On-disk buffer file size when in-memory buffer is full (512-102400 MB)</p>
-          </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-            <p className="text-[11px] text-blue-900">
-              <span className="font-medium">How it works:</span> When the in-memory buffer fills up, packets will be written to disk. When the disk buffer is full, the oldest data will be dropped to make room for new packets.
-            </p>
-          </div>
+    <Card className="shadow-sm">
+      <CardHeader className="py-3">
+        <div className="flex items-center gap-2">
+          <Database className="w-4 h-4 text-muted-foreground" />
+          <CardTitle className="text-sm">Configure Node Buffering</CardTitle>
         </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-          <DialogClose asChild>
-            <Button onClick={handleSave}>
-              <Database className="w-3 h-3 mr-1" /> Save Buffering Settings
-            </Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </CardHeader>
+      <CardContent className="pt-0 pb-4 space-y-4">
+        <p className="text-xs text-muted-foreground">
+          Choose how long packets should be retained for <strong>{nodeName}</strong> during outages and recovery.
+        </p>
+        <div className="space-y-1.5">
+          <Label htmlFor="retention-hours" className="text-xs">Retention (hours)</Label>
+          <Input
+            id="retention-hours"
+            className="h-8 text-xs"
+            type="number"
+            value={retentionHours}
+            onChange={(e) => setRetentionHours(e.target.value)}
+            min="1"
+            max="8760"
+            disabled={isOffline}
+          />
+          <p className="text-[11px] text-muted-foreground">Duration to keep buffered packets before automatic cleanup.</p>
+        </div>
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+          <p className="text-[11px] text-blue-900">
+            <span className="font-medium">Disk limit:</span> Buffer storage is capped at <strong>{DISK_BUFFER_LIMIT_GB} GB</strong>. If the limit is reached, the oldest packets will be deleted to make room for new ones, even if they haven't reached the retention time.
+          </p>
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={isOffline || !retentionHours.trim()} title={isOffline ? "Node is offline" : ""}>
+            <Database className="w-3 h-3 mr-1" /> Save Buffering Settings
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
-function KeyRotationDialog({ nodeName, nodeStatus, onSave }: { nodeName: string; nodeStatus: string; onSave: () => void }) {
+function KeyRotationSection({
+  nodeName,
+  nodeStatus,
+  connectionMode,
+  onConfigureSecondKey,
+  onGenerateLocalKey,
+}: {
+  nodeName: string;
+  nodeStatus: string;
+  connectionMode: NodeConnectionMode;
+  onConfigureSecondKey: () => void;
+  onGenerateLocalKey: () => void;
+}) {
   const isOffline = nodeStatus === 'offline';
+  const isCloudConnected = connectionMode === "via_dataminer_services";
+  const [secondSystemKey, setSecondSystemKey] = useState("");
+
+  const handleConfigureSecondKey = () => {
+    if (!secondSystemKey.trim()) {
+      return;
+    }
+    onConfigureSecondKey();
+    setSecondSystemKey("");
+  };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={isOffline} title={isOffline ? "Node is offline" : ""}>
-          <Key className="w-3 h-3 mr-2" /> Configure Keys
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Organisation Key Configuration</DialogTitle>
-          <DialogDescription>
-            Configure a second Organisation Key on <strong>{nodeName}</strong> for seamless key rotation.
-            Once the node starts using the new key, the old key can be released
-            via <a href="https://admin.dataminer.services" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">admin.dataminer.services</a>.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Current Key</Label>
-            <Input className="h-8 text-xs font-mono" value="••••••••••••••••a1b2" disabled />
-            <p className="text-[11px] text-muted-foreground">Active since Jan 15, 2026</p>
-          </div>
-          <Separator />
-          <div className="space-y-1.5">
-            <Label className="text-xs">Second Key (optional)</Label>
-            <Input className="h-8 text-xs font-mono" placeholder="Paste new Organisation Key" />
-            <p className="text-[11px] text-muted-foreground">
-              The node will begin using this key once configured. You can then revoke the original key
-              from <a href="https://admin.dataminer.services" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">admin.dataminer.services</a>.
-            </p>
-          </div>
+    <Card className="shadow-sm">
+      <CardHeader className="py-3">
+        <div className="flex items-center gap-2">
+          <Key className="w-4 h-4 text-muted-foreground" />
+          <CardTitle className="text-sm">Key Configuration</CardTitle>
         </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-          <DialogClose asChild>
-            <Button onClick={onSave}>
-              <Key className="w-3 h-3 mr-1" /> Save Key
-            </Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </CardHeader>
+      <CardContent className="pt-0 pb-4 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <InfoCard label="Connection" value={getConnectionModeLabel(connectionMode)} />
+          <InfoCard label="Authentication" value={getAuthenticationLabel(connectionMode)} />
+        </div>
+        {isCloudConnected ? (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              This node connects via dataminer.services. System Keys are managed centrally via
+              {' '}
+              <a href="https://admin.dataminer.services/41b6b9c0-9919-4427-b259-f78736bb5cc9/dms/face53b6-4c40-4a53-a5bc-522b10d14de7/keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">admin.dataminer.services</a>.
+            </p>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Key Rotation</Label>
+              <Input
+                className="h-8 text-xs font-mono"
+                placeholder="Paste key from admin.dataminer.services"
+                value={secondSystemKey}
+                onChange={(e) => setSecondSystemKey(e.target.value)}
+                disabled={isOffline}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                A second key is available in admin.dataminer.services and can be configured here for seamless rotation.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button asChild variant="outline" size="sm">
+                <a href="https://admin.dataminer.services/41b6b9c0-9919-4427-b259-f78736bb5cc9/dms/face53b6-4c40-4a53-a5bc-522b10d14de7/keys" target="_blank" rel="noopener noreferrer">
+                  <Key className="w-3 h-3 mr-1" /> Open admin.dataminer.services
+                </a>
+              </Button>
+              <Button onClick={handleConfigureSecondKey} disabled={isOffline || !secondSystemKey.trim()} size="sm" title={isOffline ? "Node is offline" : ""}>
+                <Key className="w-3 h-3 mr-1" /> Configure Key
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              This node connects directly. Keys are generated and managed on the DMS.
+            </p>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Current Local Key</Label>
+              <Input className="h-8 text-xs font-mono" value="••••••••••••••••d4f7" disabled />
+              <p className="text-[11px] text-muted-foreground">DMS generated key used for direct authentication.</p>
+            </div>
+            <div className="flex justify-end">
+              {/*<Button onClick={onGenerateLocalKey} disabled={isOffline} title={isOffline ? "Node is offline" : ""}>
+                <Key className="w-3 h-3 mr-1" /> Generate Local Key
+              </Button>*/}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 function BanNodeDialog({ nodeName, onBan }: { nodeName: string; onBan: () => void }) {

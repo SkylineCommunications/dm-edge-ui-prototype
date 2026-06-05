@@ -1,4 +1,5 @@
 export type NodeStatus = 'online' | 'offline' | 'recovering' | 'pending';
+export type NodeConnectionMode = 'via_dataminer_services' | 'direct';
 
 export interface DataPacketStats {
   accepted: number;
@@ -10,8 +11,7 @@ export interface DataPacketStats {
 }
 
 export interface BufferingConfig {
-  bufferSizeMB: number;
-  bufferFileSizeMB: number;
+  retentionHours: number;
 }
 
 export interface Schedule {
@@ -41,6 +41,7 @@ export interface EdgeNode {
   id: string;
   name: string;
   locationId: string;
+  connectionMode: NodeConnectionMode;
   status: NodeStatus;
   lastPacketReceived: string;
   registeredAt: string;
@@ -74,6 +75,7 @@ const brusselsNode: EdgeNode = {
   id: 'node-001',
   name: 'Edge-Brussels-01',
   locationId: 'loc-001',
+  connectionMode: 'via_dataminer_services',
   status: 'online',
   lastPacketReceived: '2026-03-24T14:32:10Z',
   registeredAt: '2026-01-15T09:00:00Z',
@@ -82,13 +84,14 @@ const brusselsNode: EdgeNode = {
   version: '1.4.2',
   bandwidthKbps: 2450,
   packetStats: { accepted: 148230, dropped: 12, bufferSize: 0, bufferCapacity: 10000, isRecovering: false },
-  bufferingConfig: { bufferSizeMB: 1024, bufferFileSizeMB: 5120 },
+  bufferingConfig: { retentionHours: 6 },
 };
 
 const amsterdamNode: EdgeNode = {
   id: 'node-002',
   name: 'Edge-Amsterdam-01',
   locationId: 'loc-002',
+  connectionMode: 'direct',
   status: 'recovering',
   lastPacketReceived: '2026-03-24T13:58:22Z',
   registeredAt: '2026-02-01T08:00:00Z',
@@ -97,13 +100,14 @@ const amsterdamNode: EdgeNode = {
   version: '1.4.1',
   bandwidthKbps: 4800,
   packetStats: { accepted: 89100, dropped: 342, dropReason: 'queue_full', bufferSize: 3420, bufferCapacity: 10000, isRecovering: true },
-  bufferingConfig: { bufferSizeMB: 2048, bufferFileSizeMB: 8192 },
+  bufferingConfig: { retentionHours: 4 },
 };
 
 const munichNode: EdgeNode = {
   id: 'node-003',
   name: 'Edge-Munich-01',
   locationId: 'loc-003',
+  connectionMode: 'via_dataminer_services',
   status: 'offline',
   lastPacketReceived: '2026-03-23T22:14:55Z',
   registeredAt: '2026-01-20T11:00:00Z',
@@ -112,7 +116,7 @@ const munichNode: EdgeNode = {
   version: '1.3.8',
   bandwidthKbps: 0,
   packetStats: { accepted: 210400, dropped: 89, bufferSize: 0, bufferCapacity: 10000, isRecovering: false },
-  bufferingConfig: { bufferSizeMB: 512, bufferFileSizeMB: 2048 },
+  bufferingConfig: { retentionHours: 12 },
 };
 
 const brusselsConnectors: ScriptedConnector[] = [
@@ -302,6 +306,7 @@ const additionalLocations: Location[] = extraLocationSeeds.map((seed, index) => 
     id: nodeId,
     name: `Edge-${seed.name.split(' ')[0]}-01`,
     locationId,
+    connectionMode: index % 2 === 0 ? 'via_dataminer_services' : 'direct',
     status,
     lastPacketReceived: isOffline ? '2026-03-22T23:10:00Z' : '2026-03-24T14:31:00Z',
     registeredAt: `2026-02-${String((index % 20) + 3).padStart(2, '0')}T08:30:00Z`,
@@ -413,16 +418,16 @@ export const getNodeViewByLocationId = (locationId: string) => nodeViews.find((v
 // Keep backward compat for pending nodes (not yet assigned to a location)
 export const pendingNodes: Partial<EdgeNode>[] = [
   {
-    id: 'node-pending-001',
-    name: 'Edge-NewYork-01',
+    id: '07b3ab6d-03a2-45bc-bc40-2eb784fe16d6',
+    name: '07b3ab6d-03a2-45bc-bc40-2eb784fe16d6',
     status: 'pending',
     registeredAt: '2026-03-24T12:00:00Z',
     ipAddress: '10.42.4.20',
     version: '1.4.2',
   },
   {
-    id: 'node-pending-002',
-    name: 'Edge-Tokyo-01',
+    id: '8bad6612-3a82-4334-8491-324f797506ef',
+    name: '8bad6612-3a82-4334-8491-324f797506ef',
     status: 'pending',
     registeredAt: '2026-03-24T13:45:00Z',
     ipAddress: '10.42.5.10',

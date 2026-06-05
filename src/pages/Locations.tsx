@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { nodeViews, pendingNodes } from "@/data/mockData";
 import { StatusIndicator } from "@/components/StatusIndicator";
 import { BufferStatus } from "@/components/BufferStatus";
@@ -27,10 +27,10 @@ export default function Locations() {
           <p className="text-sm text-muted-foreground mt-1">All registered nodes</p>
         </div>
         <Button asChild>
-          <a href="https://aka.dataminer.services/EdgeNodeInstallation" target="_blank" rel="noopener noreferrer">
+          <Link to="/install">
             <Plus className="w-4 h-4 mr-2" />
             Add Node <ArrowUpRight className="w-3 h-3 ml-1" />
-          </a>
+          </Link>
         </Button>
       </div>
 
@@ -80,9 +80,7 @@ export default function Locations() {
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground ml-7">
                       {node && <span className="font-mono">{node.ipAddress}</span>}
-                      {node && <span>v{node.version}</span>}
-                      <span>{item.connectors.length} connector(s)</span>
-                      <span>{item.connectors.filter((c) => c.schedules.some((s) => s.enabled)).length} active schedule(s)</span>
+                      {node && <span>v{node.version}</span>}                      
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 lg:items-center">
