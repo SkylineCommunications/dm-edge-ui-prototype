@@ -13,7 +13,7 @@ type ConnectionMode = "organisation" | "direct";
 const platforms: { id: Platform; label: string; icon: string; desc: string }[] = [
   { id: "deb", label: "Linux (DEB)", icon: "🐧", desc: "Debian / Ubuntu" },
   { id: "msi", label: "Windows (MSI)", icon: "🪟", desc: "Windows Server" },
-  { id: "docker", label: "Docker", icon: "🐳", desc: "Container image" },
+  //{ id: "docker", label: "Docker", icon: "🐳", desc: "Container image" },
 ];
 
 const downloadLinks: Record<Platform, string> = {
@@ -201,6 +201,14 @@ export default function InstallEdge() {
 
   return (
     <div className="space-y-6 animate-slide-up max-w-4xl">
+      <div className="flex items-center gap-2 text-sm">
+        <Link to="/" className="text-primary hover:underline">
+          Overview
+        </Link>
+        <span className="text-muted-foreground">/</span>
+        <span className="text-foreground font-medium">Install Edge Node</span>
+      </div>
+
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Install Edge Node</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -308,7 +316,7 @@ export default function InstallEdge() {
                 <p className="text-xs text-foreground">{connectionModeDetails.organisation.requirement}</p>
               </div>
               <Button variant="outline" size="sm" asChild>
-                <a href="https://admin.dataminer.services" target="_blank" rel="noopener noreferrer">
+                <a href="https://admin.dataminer.services/41b6b9c0-9919-4427-b259-f78736bb5cc9/dms/face53b6-4c40-4a53-a5bc-522b10d14de7/keys" target="_blank" rel="noopener noreferrer">
                   <Key className="w-3.5 h-3.5 mr-2" />
                   Open admin.dataminer.services
                   <ExternalLink className="w-3 h-3 ml-1.5" />

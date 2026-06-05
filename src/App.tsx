@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Locations from "./pages/Locations";
 import LocationDetail from "./pages/LocationDetail";
+import InstallEdge from "./pages/InstallEdge";
 import PendingApprovals from "./pages/PendingApprovals";
 import NotFound from "./pages/NotFound";
 
@@ -21,6 +22,7 @@ const App = () => (
             <Route path="/" element={<Locations />} />
             <Route path="/nodes" element={<Locations />} />
             <Route path="/nodes/:locationId" element={<LocationDetail />} />
+            <Route path="/install" element={<InstallEdge />} />
             <Route path="/approvals" element={<PendingApprovals />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
